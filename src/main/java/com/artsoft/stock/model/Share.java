@@ -36,9 +36,4 @@ public class Share {
         this.minPrice = this.startPrice.subtract(this.startPrice.divide(BigDecimal.TEN)).setScale(2);
         this.spread = new Spread(this);
     }
-
-    public void updateShareMaxMinPrice(Share share){
-        share.setMaxPrice(share.startPrice.add(share.startPrice.divide(BigDecimal.TEN)).setScale(2));
-        share.setMinPrice(share.startPrice.subtract(share.startPrice.divide(BigDecimal.TEN)).setScale(2));
-    }
 }

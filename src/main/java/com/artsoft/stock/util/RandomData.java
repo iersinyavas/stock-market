@@ -2,9 +2,12 @@ package com.artsoft.stock.util;
 
 import com.artsoft.stock.model.share.ShareCode;
 import com.artsoft.stock.util.GeneralEnumeration.*;
+import lombok.extern.slf4j.Slf4j;
+
 import java.math.BigDecimal;
 import java.util.Random;
 
+@Slf4j
 public class RandomData {
 
     private static Random random = new Random();

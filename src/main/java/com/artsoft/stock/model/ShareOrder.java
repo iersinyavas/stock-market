@@ -50,7 +50,7 @@ public class ShareOrder {
                 buyLot = (buyLot == 0) ? 0 : RandomData.randomLot(buyLot);
                 this.lot = (buyLot <= SystemConstants.MAX_LOT && buyLot >= 0) ? BigDecimal.valueOf(buyLot) : BigDecimal.valueOf(RandomData.randomLot(SystemConstants.MAX_LOT));
             }else {
-                this.price = share.getCurrentSellPrice();
+                this.price = RandomData.randomShareOrderPrice(share.getCurrentBuyPrice(), share.getMaxPrice());
                 this.lot = BigDecimal.valueOf(sellLot);
             }
         }else if(haveShareInformation.getAverageCost().compareTo(share.getCurrentBuyPrice()) > 0){
@@ -67,7 +67,7 @@ public class ShareOrder {
                     buyLot = (buyLot == 0) ? 0 : RandomData.randomLot(buyLot);
                     this.lot = (buyLot <= SystemConstants.MAX_LOT && buyLot >= 0) ? BigDecimal.valueOf(buyLot) : BigDecimal.valueOf(RandomData.randomLot(SystemConstants.MAX_LOT));
                 }else {
-                    this.price = RandomData.randomShareOrderPrice(share.getCurrentBuyPrice(), share.getMaxPrice());
+                    this.price = RandomData.randomShareOrderPrice(haveShareInformation.getAverageCost(), share.getMaxPrice());
                     this.lot = BigDecimal.valueOf(sellLot);
                 }
             }

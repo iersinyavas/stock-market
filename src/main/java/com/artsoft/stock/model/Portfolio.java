@@ -28,7 +28,7 @@ public class Portfolio {
 
     public Portfolio(){
         this.balance = BigDecimal.valueOf(SystemConstants.CUSTOMER_BALANCE);
-        haveShareInformationMap.put(ShareCode.ALPHA, new HaveShareInformation(BigDecimal.valueOf(SystemConstants.START_HAVE_SHARE_LOT), Database.shareMap.get(ShareCode.ALPHA).getCurrentBuyPrice()));
+        haveShareInformationMap.put(ShareCode.ALPHA, new HaveShareInformation(BigDecimal.valueOf(SystemConstants.START_HAVE_SHARE_LOT), Database.shareMap.get(ShareCode.ALPHA).getCurrentSellPrice()));
     }
 
 
@@ -112,7 +112,7 @@ public class Portfolio {
             }else {
                 if (shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMOVE)){
                     haveShareInformation.setTotalCost(haveShareInformation.getTotalCost().add(shareOrder.getCost()));
-                    haveShareInformation.setAvailableHaveShareLot(haveShareInformation.getAvailableHaveShareLot().subtract(shareOrder.getLot()));
+                    haveShareInformation.setAvailableHaveShareLot(haveShareInformation.getAvailableHaveShareLot().add(shareOrder.getLot()));
                     haveShareInformation.setHaveShareLot(haveShareInformation.getHaveShareLot().add(shareOrder.getLot()));
                     haveShareInformation.setAverageCost(haveShareInformation.getTotalCost().divide(haveShareInformation.getHaveShareLot(), 2, RoundingMode.FLOOR).setScale(2, RoundingMode.FLOOR));
                 }

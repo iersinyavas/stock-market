@@ -44,6 +44,9 @@ public class StockApplication implements CommandLineRunner {
         Database.shareMap.put(ShareCode.ALPHA, new Share(ShareCode.ALPHA));
         Database.customerMap.put("A", new Customer("A", new Portfolio(), BigDecimal.valueOf(SystemConstants.CUSTOMER_SALARY)));
         Database.customerMap.put("B", new Customer("B", new Portfolio(), BigDecimal.valueOf(SystemConstants.CUSTOMER_SALARY)));
+        Database.customerMap.put("C", new Customer("C", new Portfolio(), BigDecimal.valueOf(SystemConstants.CUSTOMER_SALARY)));
+        Database.customerMap.put("D", new Customer("D", new Portfolio(), BigDecimal.valueOf(SystemConstants.CUSTOMER_SALARY)));
+        Database.customerMap.put("E", new Customer("E", new Portfolio(), BigDecimal.valueOf(SystemConstants.CUSTOMER_SALARY)));
     }
 
     @Override
@@ -82,6 +85,57 @@ public class StockApplication implements CommandLineRunner {
         });
         customerB.setName("B");
 
+        Thread customerC = new Thread(() -> {
+            Customer customer = Database.customerMap.get("C");
+
+            while (true) {
+                try {
+                    Thread.sleep(random.nextInt(SystemConstants.CUSTOMER_RANDOM_SLEEP));
+                    ShareOrder shareOrder = customer.getPortfolio().createShareOrder();
+                    if (Objects.nonNull(shareOrder)){
+                        customer.getPortfolio().sendShareOrder(shareOrder);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        customerC.setName("C");
+
+        Thread customerD = new Thread(() -> {
+            Customer customer = Database.customerMap.get("D");
+
+            while (true) {
+                try {
+                    Thread.sleep(random.nextInt(SystemConstants.CUSTOMER_RANDOM_SLEEP));
+                    ShareOrder shareOrder = customer.getPortfolio().createShareOrder();
+                    if (Objects.nonNull(shareOrder)){
+                        customer.getPortfolio().sendShareOrder(shareOrder);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        customerD.setName("D");
+
+        Thread customerE = new Thread(() -> {
+            Customer customer = Database.customerMap.get("E");
+
+            while (true) {
+                try {
+                    Thread.sleep(random.nextInt(SystemConstants.CUSTOMER_RANDOM_SLEEP));
+                    ShareOrder shareOrder = customer.getPortfolio().createShareOrder();
+                    if (Objects.nonNull(shareOrder)){
+                        customer.getPortfolio().sendShareOrder(shareOrder);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        customerE.setName("E");
+
         Share shareA = Database.shareMap.get(ShareCode.ALPHA);
         Thread processedBuyLevelShareOrders = new Thread(() -> {
             while (true) {
@@ -107,12 +161,12 @@ public class StockApplication implements CommandLineRunner {
                     if (buyShareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMOVE)) {
                         buyShareOrderStatusQueue.take();
                         Database.customerMap.get(buyShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(buyShareOrder);
-                        log.info("Alış işlemi gerçekleşti Alış: {}   Satış: {} ", shareA.getCurrentBuyPrice(), shareA.getCurrentSellPrice());
+                        log.info("Alış işlemi gerçekleşti Alış: {}   Satış: {} Kademede bekleyen: {}", shareA.getCurrentBuyPrice(), shareA.getCurrentSellPrice(), buyShareOrderStatusQueue.size());
                     }
                     if (sellShareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMOVE)) {
                         sellShareOrderStatusQueue.take();
                         Database.customerMap.get(buyShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(sellShareOrder);
-                        log.info("Alış işlemi gerçekleşti Alış: {}   Satış: {} ", shareA.getCurrentBuyPrice(), shareA.getCurrentSellPrice());
+                        log.info("Alış işlemi gerçekleşti Alış: {}   Satış: {} Kademede bekleyen: {}", shareA.getCurrentBuyPrice(), shareA.getCurrentSellPrice(), buyShareOrderStatusQueue.size());
                     }
                 } catch (InterruptedException ex) {
 
@@ -145,12 +199,15 @@ public class StockApplication implements CommandLineRunner {
                     if (buyShareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMOVE)) {
                         buyShareOrderStatusQueue.take();
                         Database.customerMap.get(buyShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(buyShareOrder);
-                        log.info("Satış işlemi gerçekleşti Alış: {}   Satış: {} ", shareA.getCurrentBuyPrice(), shareA.getCurrentSellPrice());
+                        log.info("Satış işlemi gerçekleşti Alış: {}   Satış: {} Kademede bekleyen: {}", shareA.getCurrentBuyPrice(), shareA.getCurrentSellPrice(), sellShareOrderStatusQueue.size());
                     }
                     if (sellShareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMOVE)) {
                         sellShareOrderStatusQueue.take();
-                        Database.customerMap.get(buyShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(sellShareOrder);
-                        log.info("Satış işlemi gerçekleşti Alış: {}   Satış: {} ", shareA.getCurrentBuyPrice(), shareA.getCurrentSellPrice());
+                        Database.customerMap
+                                .get(buyShareOrder.getCustomerName())
+                                .getPortfolio()
+                                .updatePortfolioProcessShareOrder(sellShareOrder);
+                        log.info("Satış işlemi gerçekleşti Alış: {}   Satış: {} Kademede bekleyen: {}", shareA.getCurrentBuyPrice(), shareA.getCurrentSellPrice(), sellShareOrderStatusQueue.size());
                     }
                 } catch (InterruptedException ex) {
 
@@ -160,7 +217,10 @@ public class StockApplication implements CommandLineRunner {
         processedSellLevelShareOrders.setName("Sell");
 
         customerA.start();
-        //customerB.start();
+        customerB.start();
+        customerC.start();
+        customerD.start();
+        customerE.start();
         processedBuyLevelShareOrders.start();
         processedSellLevelShareOrders.start();
     }
