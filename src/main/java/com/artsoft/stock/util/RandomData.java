@@ -18,7 +18,7 @@ public class RandomData {
     }
 
     public static BigDecimal randomStartPrice(){
-        return BigDecimal.valueOf(/*random.nextInt(10)+*/1);
+        return BigDecimal.valueOf(/*random.nextInt(5)+*/2);
     }
 
     public static BigDecimal randomShareOrderPrice(BigDecimal minPrice, BigDecimal maxPrice){

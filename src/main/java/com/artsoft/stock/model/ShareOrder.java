@@ -23,11 +23,14 @@ public class ShareOrder {
 
     private Long id;
     private String customerName;
-    private BigDecimal lot;
-    private BigDecimal beforeLot;
+    private BigDecimal lot = BigDecimal.ZERO;
+    private BigDecimal remainingLot;
     private BigDecimal price;
     private BigDecimal cost;
+    private BigDecimal remainingCost;
     private ShareCode shareCode;
+    private BigDecimal processedLot;
+    private BigDecimal processedCost;
     private Boolean isActive = Boolean.TRUE;
     private ShareOrderStatus shareOrderStatus;
     private ShareOrderOperationStatus shareOrderOperationStatus;
@@ -43,38 +46,49 @@ public class ShareOrder {
         int sellLot = (haveShareLot == 0) ? 0 : RandomData.randomLot(haveShareLot).intValue();
         sellLot = (sellLot <= SystemConstants.MAX_LOT && sellLot >= 0) ? sellLot : RandomData.randomLot(SystemConstants.MAX_LOT);
 
-        if (haveShareInformation.getAverageCost().compareTo(share.getCurrentSellPrice()) < 0){
-            if (shareOrderStatus.equals(ShareOrderStatus.BUY)) {
-                this.price = RandomData.randomShareOrderPrice(share.getMinPrice(), share.getCurrentSellPrice());
-                buyLot = balance.divide(price, 2, RoundingMode.FLOOR).intValue();
-                buyLot = (buyLot == 0) ? 0 : RandomData.randomLot(buyLot);
-                this.lot = (buyLot <= SystemConstants.MAX_LOT && buyLot >= 0) ? BigDecimal.valueOf(buyLot) : BigDecimal.valueOf(RandomData.randomLot(SystemConstants.MAX_LOT));
-            }else {
-                this.price = RandomData.randomShareOrderPrice(share.getCurrentBuyPrice(), share.getMaxPrice());
-                this.lot = BigDecimal.valueOf(sellLot);
-            }
-        }else if(haveShareInformation.getAverageCost().compareTo(share.getCurrentBuyPrice()) > 0){
-            if (shareOrderStatus.equals(ShareOrderStatus.BUY)) {
-                this.price = RandomData.randomShareOrderPrice(share.getMinPrice(), share.getCurrentSellPrice());
-                buyLot = balance.divide(price, 2, RoundingMode.FLOOR).intValue();
-                buyLot = (buyLot == 0) ? 0 : RandomData.randomLot(buyLot);
-                this.lot = (buyLot <= SystemConstants.MAX_LOT && buyLot >= 0) ? BigDecimal.valueOf(buyLot) : BigDecimal.valueOf(RandomData.randomLot(SystemConstants.MAX_LOT));
-            }else {
-                if (haveShareInformation.getAverageCost().compareTo(share.getMaxPrice()) > 0){
-                    this.shareOrderStatus = ShareOrderStatus.BUY;
-                    this.price = RandomData.randomShareOrderPrice(share.getMinPrice(), share.getCurrentSellPrice());
-                    buyLot = balance.divide(price, 2, RoundingMode.FLOOR).intValue();
-                    buyLot = (buyLot == 0) ? 0 : RandomData.randomLot(buyLot);
-                    this.lot = (buyLot <= SystemConstants.MAX_LOT && buyLot >= 0) ? BigDecimal.valueOf(buyLot) : BigDecimal.valueOf(RandomData.randomLot(SystemConstants.MAX_LOT));
-                }else {
-                    this.price = RandomData.randomShareOrderPrice(haveShareInformation.getAverageCost(), share.getMaxPrice());
-                    this.lot = BigDecimal.valueOf(sellLot);
-                }
-            }
+        if (shareOrderStatus.equals(ShareOrderStatus.BUY)) {
+            this.price = RandomData.randomShareOrderPrice(share.getMinPrice(), share.getCurrentSellPrice());
+            buyLot = balance.divide(price, 2, RoundingMode.FLOOR).intValue();
+            buyLot = (buyLot == 0) ? 0 : RandomData.randomLot(buyLot);
+            this.lot = (buyLot <= SystemConstants.MAX_LOT && buyLot >= 0) ? BigDecimal.valueOf(buyLot) : BigDecimal.valueOf(RandomData.randomLot(SystemConstants.MAX_LOT));
+        }else {
+            this.price = RandomData.randomShareOrderPrice(share.getCurrentBuyPrice(), share.getMaxPrice());
+            this.lot = BigDecimal.valueOf(sellLot);
         }
 
-        this.beforeLot = this.lot;
+//        if (haveShareInformation.getAveragePrice().compareTo(share.getCurrentSellPrice()) < 0){
+//            if (shareOrderStatus.equals(ShareOrderStatus.BUY)) {
+//                this.price = RandomData.randomShareOrderPrice(share.getMinPrice(), share.getCurrentSellPrice());
+//                buyLot = balance.divide(price, 2, RoundingMode.FLOOR).intValue();
+//                buyLot = (buyLot == 0) ? 0 : RandomData.randomLot(buyLot);
+//                this.lot = (buyLot <= SystemConstants.MAX_LOT && buyLot >= 0) ? BigDecimal.valueOf(buyLot) : BigDecimal.valueOf(RandomData.randomLot(SystemConstants.MAX_LOT));
+//            }else {
+//                this.price = RandomData.randomShareOrderPrice(share.getCurrentBuyPrice(), share.getMaxPrice());
+//                this.lot = BigDecimal.valueOf(sellLot);
+//            }
+//        }else if(haveShareInformation.getAveragePrice().compareTo(share.getCurrentBuyPrice()) > 0){
+//            if (shareOrderStatus.equals(ShareOrderStatus.BUY)) {
+//                this.price = RandomData.randomShareOrderPrice(share.getMinPrice(), share.getCurrentSellPrice());
+//                buyLot = balance.divide(price, 2, RoundingMode.FLOOR).intValue();
+//                buyLot = (buyLot == 0) ? 0 : RandomData.randomLot(buyLot);
+//                this.lot = (buyLot <= SystemConstants.MAX_LOT && buyLot >= 0) ? BigDecimal.valueOf(buyLot) : BigDecimal.valueOf(RandomData.randomLot(SystemConstants.MAX_LOT));
+//            }else {
+//                if (haveShareInformation.getAveragePrice().compareTo(share.getMaxPrice()) > 0){
+//                    this.shareOrderStatus = ShareOrderStatus.BUY;
+//                    this.price = RandomData.randomShareOrderPrice(share.getMinPrice(), share.getCurrentSellPrice());
+//                    buyLot = balance.divide(price, 2, RoundingMode.FLOOR).intValue();
+//                    buyLot = (buyLot == 0) ? 0 : RandomData.randomLot(buyLot);
+//                    this.lot = (buyLot <= SystemConstants.MAX_LOT && buyLot >= 0) ? BigDecimal.valueOf(buyLot) : BigDecimal.valueOf(RandomData.randomLot(SystemConstants.MAX_LOT));
+//                }else {
+//                    this.price = RandomData.randomShareOrderPrice(haveShareInformation.getAveragePrice(), share.getMaxPrice());
+//                    this.lot = BigDecimal.valueOf(sellLot);
+//                }
+//            }
+//        }
+
+        this.remainingLot = this.lot;
         this.cost = price.multiply(lot);
+        this.remainingCost = this.cost;
         this.shareOrderOperationStatus = ShareOrderOperationStatus.CREATED;
     }
 

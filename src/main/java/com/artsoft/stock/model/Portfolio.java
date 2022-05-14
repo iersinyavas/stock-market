@@ -6,13 +6,13 @@ import com.artsoft.stock.repository.Database;
 import com.artsoft.stock.util.GeneralEnumeration.*;
 import com.artsoft.stock.util.RandomData;
 import com.artsoft.stock.util.SystemConstants;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -22,13 +22,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 @ToString
 public class Portfolio {
     private BigDecimal balance;
+    private BigDecimal totalPortfolioValue;
     private BlockingQueue<ShareOrder> tradedShareOrder = new LinkedBlockingQueue<>();
     private Map<ShareCode, HaveShareInformation> haveShareInformationMap = new HashMap<>();
+
+    @JsonIgnore
     Object lock = new Object();
 
     public Portfolio(){
         this.balance = BigDecimal.valueOf(SystemConstants.CUSTOMER_BALANCE);
-        haveShareInformationMap.put(ShareCode.ALPHA, new HaveShareInformation(BigDecimal.valueOf(SystemConstants.START_HAVE_SHARE_LOT), Database.shareMap.get(ShareCode.ALPHA).getCurrentSellPrice()));
+        this.getHaveShareInformationMap().put(ShareCode.ALPHA, new HaveShareInformation(BigDecimal.valueOf(SystemConstants.START_HAVE_SHARE_LOT), Database.shareMap.get(ShareCode.ALPHA).getCurrentSellPrice()));
     }
 
 
@@ -39,22 +42,13 @@ public class Portfolio {
 
 
     public void updatePortfolioProcessShareOrder(ShareOrder shareOrder){
-        this.updateBalanceProcessShareOrder(shareOrder);
-        this.updateLotProcessShareOrder(shareOrder);
+        synchronized (lock){
+            this.updateLotProcessShareOrder(shareOrder);
+        }
     }
 
     public void updateLotProcessShareOrder(ShareOrder shareOrder){
-        this.updateHaveShareInformation(shareOrder, this.getHaveShareInformationMap().get(shareOrder.getShareCode()));
-    }
-
-    private void updateBalanceProcessShareOrder(ShareOrder shareOrder){
-        synchronized (lock) {
-            if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.SELL) && !shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.CREATED)) {
-                this.updateBalance(this.getBalance().add(shareOrder.getPrice()));
-            }else {
-                this.updateBalance(this.getBalance().subtract(shareOrder.getCost()));
-            }
-        }
+        this.updateHaveShareInformation(shareOrder);
     }
 
     public void updateBalance(BigDecimal balance){
@@ -88,38 +82,42 @@ public class Portfolio {
     public ShareOrder createShareOrder(){
         ShareCode shareCode = ShareCode.values()[RandomData.shareCodeIndex()];
         Share share = Database.shareMap.get(shareCode);
-        HaveShareInformation haveShareInformation = this.haveShareInformationMap.get(shareCode);
-        ShareOrder shareOrder = new ShareOrder(share, this.getBalance(), haveShareInformation);
-        if (shareOrder.getLot().compareTo(BigDecimal.ZERO) != 0) {
+        ShareOrder shareOrder = new ShareOrder(share, this.getBalance(), this.getHaveShareInformationMap().get(shareCode));
+        if (shareOrder.getLot().compareTo(BigDecimal.ZERO) > 0) {
             this.updatePortfolioProcessShareOrder(shareOrder);
             return shareOrder;
         }
         return null;
     }
 
-    public void updateHaveShareInformation(ShareOrder shareOrder, HaveShareInformation haveShareInformation){
+    public void updateHaveShareInformation(ShareOrder shareOrder){
         synchronized (lock){
+            HaveShareInformation haveShareInformation = this.getHaveShareInformationMap().get(shareOrder.getShareCode());
             if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.SELL)){
                 if (shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.CREATED)){
-                    haveShareInformation.setTotalCost(haveShareInformation.getTotalCost().subtract(shareOrder.getCost()));
                     haveShareInformation.setAvailableHaveShareLot(haveShareInformation.getAvailableHaveShareLot().subtract(shareOrder.getLot()));
-                    haveShareInformation.setAverageCost(haveShareInformation.getTotalCost().divide(haveShareInformation.getHaveShareLot(), 2, RoundingMode.FLOOR).setScale(2, RoundingMode.FLOOR));
                 }
-                if (shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMOVE)){
+                if (shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMOVE) || shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMAINING)){
                     haveShareInformation.setHaveShareLot(haveShareInformation.getHaveShareLot().subtract(shareOrder.getLot()));
+                    haveShareInformation.setTotalCost(haveShareInformation.getTotalCost().subtract(shareOrder.getCost()));
+                    haveShareInformation.setAveragePrice(haveShareInformation.getTotalCost().divide(haveShareInformation.getHaveShareLot(), 2, RoundingMode.FLOOR).setScale(2, RoundingMode.FLOOR));
+                    this.updateBalance(this.getBalance().add(shareOrder.getCost()));
                 }
-                this.getHaveShareInformationMap().put(shareOrder.getShareCode(), haveShareInformation);
             }else {
-                if (shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMOVE)){
-                    haveShareInformation.setTotalCost(haveShareInformation.getTotalCost().add(shareOrder.getCost()));
+                if (shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.CREATED)){
+                    this.updateBalance(this.getBalance().subtract(shareOrder.getCost()));
+                }
+                if (shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMOVE) || shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMAINING)){
                     haveShareInformation.setAvailableHaveShareLot(haveShareInformation.getAvailableHaveShareLot().add(shareOrder.getLot()));
                     haveShareInformation.setHaveShareLot(haveShareInformation.getHaveShareLot().add(shareOrder.getLot()));
-                    haveShareInformation.setAverageCost(haveShareInformation.getTotalCost().divide(haveShareInformation.getHaveShareLot(), 2, RoundingMode.FLOOR).setScale(2, RoundingMode.FLOOR));
+                    haveShareInformation.setTotalCost(haveShareInformation.getTotalCost().add(shareOrder.getCost()));
+                    haveShareInformation.setAveragePrice(haveShareInformation.getTotalCost().divide(haveShareInformation.getHaveShareLot(), 2, RoundingMode.FLOOR).setScale(2, RoundingMode.FLOOR));
                 }
-                this.getHaveShareInformationMap().put(shareOrder.getShareCode(), haveShareInformation);
             }
         }
 
     }
+
+
 
 }

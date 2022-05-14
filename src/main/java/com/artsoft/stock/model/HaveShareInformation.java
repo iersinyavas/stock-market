@@ -16,14 +16,16 @@ import java.math.BigDecimal;
 public class HaveShareInformation {
     private BigDecimal availableHaveShareLot;
     private BigDecimal haveShareLot;
-    private BigDecimal averageCost;
+    private BigDecimal averagePrice;
     private BigDecimal totalCost;
-    private InvestmentResult investmentResult;
+    private BigDecimal currentTotalValue;
+ //   private BigDecimal netCost;
 
-    public HaveShareInformation(BigDecimal haveShareLot, BigDecimal averageCost){
+    public HaveShareInformation(BigDecimal haveShareLot, BigDecimal averagePrice){
         this.haveShareLot = haveShareLot;
         this.availableHaveShareLot = haveShareLot;
-        this.averageCost = averageCost;
-        this.totalCost = availableHaveShareLot.multiply(averageCost);
+        this.averagePrice = averagePrice;
+        this.totalCost = availableHaveShareLot.multiply(this.averagePrice);
+ //       this.netCost = this.totalCost;
     }
 }
