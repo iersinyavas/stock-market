@@ -29,7 +29,7 @@ import java.util.concurrent.BlockingQueue;
 @Slf4j
 public class StockApplication implements CommandLineRunner {
 
-    private Random random = new Random();
+
 
     @Autowired
     private ShareMarketService shareMarketService;
@@ -58,208 +58,40 @@ public class StockApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        Thread customerA = new Thread(() -> {
-            Customer customer = Database.customerMap.get("A");
-
-            while (true) {
-                try {
-                    Thread.sleep(random.nextInt(SystemConstants.CUSTOMER_RANDOM_SLEEP));
-                    ShareOrder shareOrder = customer.getPortfolio().createShareOrder();
-                    if (Objects.nonNull(shareOrder)){
-                        customer.getPortfolio().sendShareOrder(shareOrder);
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        Customer customerA = Database.customerMap.get("A");
         customerA.setName("A");
 
-        Thread customerB = new Thread(() -> {
-            Customer customer = Database.customerMap.get("B");
-
-            while (true) {
-                try {
-                    Thread.sleep(random.nextInt(SystemConstants.CUSTOMER_RANDOM_SLEEP));
-                    ShareOrder shareOrder = customer.getPortfolio().createShareOrder();
-                    if (Objects.nonNull(shareOrder)){
-                        customer.getPortfolio().sendShareOrder(shareOrder);
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        Customer customerB = Database.customerMap.get("B");
         customerB.setName("B");
 
-        Thread customerC = new Thread(() -> {
-            Customer customer = Database.customerMap.get("C");
-
-            while (true) {
-                try {
-                    Thread.sleep(random.nextInt(SystemConstants.CUSTOMER_RANDOM_SLEEP));
-                    ShareOrder shareOrder = customer.getPortfolio().createShareOrder();
-                    if (Objects.nonNull(shareOrder)){
-                        customer.getPortfolio().sendShareOrder(shareOrder);
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        Customer customerC = Database.customerMap.get("C");
         customerC.setName("C");
 
-        Thread customerD = new Thread(() -> {
-            Customer customer = Database.customerMap.get("D");
-
-            while (true) {
-                try {
-                    Thread.sleep(random.nextInt(SystemConstants.CUSTOMER_RANDOM_SLEEP));
-                    ShareOrder shareOrder = customer.getPortfolio().createShareOrder();
-                    if (Objects.nonNull(shareOrder)){
-                        customer.getPortfolio().sendShareOrder(shareOrder);
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        Customer customerD = Database.customerMap.get("D");
         customerD.setName("D");
 
-        Thread customerE = new Thread(() -> {
-            Customer customer = Database.customerMap.get("E");
-
-            while (true) {
-                try {
-                    Thread.sleep(random.nextInt(SystemConstants.CUSTOMER_RANDOM_SLEEP));
-                    ShareOrder shareOrder = customer.getPortfolio().createShareOrder();
-                    if (Objects.nonNull(shareOrder)){
-                        customer.getPortfolio().sendShareOrder(shareOrder);
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        Customer customerE = Database.customerMap.get("E");
         customerE.setName("E");
 
-        Thread customerF = new Thread(() -> {
-            Customer customer = Database.customerMap.get("F");
-
-            while (true) {
-                try {
-                    Thread.sleep(random.nextInt(SystemConstants.CUSTOMER_RANDOM_SLEEP));
-                    ShareOrder shareOrder = customer.getPortfolio().createShareOrder();
-                    if (Objects.nonNull(shareOrder)){
-                        customer.getPortfolio().sendShareOrder(shareOrder);
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        Customer customerF = Database.customerMap.get("F");
         customerF.setName("F");
 
-        Thread customerG = new Thread(() -> {
-            Customer customer = Database.customerMap.get("G");
-
-            while (true) {
-                try {
-                    Thread.sleep(random.nextInt(SystemConstants.CUSTOMER_RANDOM_SLEEP));
-                    ShareOrder shareOrder = customer.getPortfolio().createShareOrder();
-                    if (Objects.nonNull(shareOrder)){
-                        customer.getPortfolio().sendShareOrder(shareOrder);
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        Customer customerG = Database.customerMap.get("G");
         customerG.setName("G");
 
-        Thread customerH = new Thread(() -> {
-            Customer customer = Database.customerMap.get("H");
-
-            while (true) {
-                try {
-                    Thread.sleep(random.nextInt(SystemConstants.CUSTOMER_RANDOM_SLEEP));
-                    ShareOrder shareOrder = customer.getPortfolio().createShareOrder();
-                    if (Objects.nonNull(shareOrder)){
-                        customer.getPortfolio().sendShareOrder(shareOrder);
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        Customer customerH = Database.customerMap.get("H");
         customerH.setName("H");
 
-        Thread customerI = new Thread(() -> {
-            Customer customer = Database.customerMap.get("I");
-
-            while (true) {
-                try {
-                    Thread.sleep(random.nextInt(SystemConstants.CUSTOMER_RANDOM_SLEEP));
-                    ShareOrder shareOrder = customer.getPortfolio().createShareOrder();
-                    if (Objects.nonNull(shareOrder)){
-                        customer.getPortfolio().sendShareOrder(shareOrder);
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        Customer customerI = Database.customerMap.get("I");
         customerI.setName("I");
 
-        Thread customerJ = new Thread(() -> {
-            Customer customer = Database.customerMap.get("J");
-
-            while (true) {
-                try {
-                    Thread.sleep(random.nextInt(SystemConstants.CUSTOMER_RANDOM_SLEEP));
-                    ShareOrder shareOrder = customer.getPortfolio().createShareOrder();
-                    if (Objects.nonNull(shareOrder)){
-                        customer.getPortfolio().sendShareOrder(shareOrder);
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        Customer customerJ = Database.customerMap.get("J");
         customerJ.setName("J");
 
-        Thread customerK = new Thread(() -> {
-            Customer customer = Database.customerMap.get("K");
-
-            while (true) {
-                try {
-                    Thread.sleep(random.nextInt(SystemConstants.CUSTOMER_RANDOM_SLEEP));
-                    ShareOrder shareOrder = customer.getPortfolio().createShareOrder();
-                    if (Objects.nonNull(shareOrder)){
-                        customer.getPortfolio().sendShareOrder(shareOrder);
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        Customer customerK = Database.customerMap.get("K");
         customerK.setName("K");
 
-        Thread customerL = new Thread(() -> {
-            Customer customer = Database.customerMap.get("L");
-
-            while (true) {
-                try {
-                    Thread.sleep(random.nextInt(SystemConstants.CUSTOMER_RANDOM_SLEEP));
-                    ShareOrder shareOrder = customer.getPortfolio().createShareOrder();
-                    if (Objects.nonNull(shareOrder)){
-                        customer.getPortfolio().sendShareOrder(shareOrder);
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        Customer customerL = Database.customerMap.get("L");
         customerL.setName("L");
 
 
@@ -278,20 +110,16 @@ public class StockApplication implements CommandLineRunner {
                     shareMarketService.processedShareOrders(buyShareOrder, sellShareOrder);
 
                     if (buyShareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMOVE)) {
-                        Database.customerMap.get(buyShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(buyShareOrder);
                         shareOrderMap.get(ShareOrderStatus.BUY).take();
                         log.info("Alış tarafında işlem gerçekleşti Alış: {}   Satış: {} ---> Kademede bekleyen: {}", shareA.getCurrentBuyPrice(), shareA.getCurrentSellPrice(), shareOrderMap.get(ShareOrderStatus.BUY).size());
                     }else {
-                        Database.customerMap.get(buyShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(buyShareOrder);
                         buyShareOrder.setLot(buyShareOrder.getRemainingLot());
                         buyShareOrder.setCost(buyShareOrder.getRemainingCost());
                     }
                     if (sellShareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMOVE)) {
-                        Database.customerMap.get(sellShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(sellShareOrder);
                         shareOrderMap.get(ShareOrderStatus.SELL).take();
                         log.info("Alış tarafında işlem gerçekleşti Alış: {}   Satış: {} ---> Kademede bekleyen: {}", shareA.getCurrentBuyPrice(), shareA.getCurrentSellPrice(), shareOrderMap.get(ShareOrderStatus.BUY).size());
                     }else {
-                        Database.customerMap.get(sellShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(sellShareOrder);
                         sellShareOrder.setLot(buyShareOrder.getRemainingLot());
                         sellShareOrder.setCost(buyShareOrder.getRemainingCost());
                     }
@@ -316,20 +144,16 @@ public class StockApplication implements CommandLineRunner {
                     shareMarketService.processedShareOrders(buyShareOrder, sellShareOrder);
 
                     if (buyShareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMOVE)) {
-                        Database.customerMap.get(buyShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(buyShareOrder);
                         shareOrderMap.get(ShareOrderStatus.BUY).take();
                         log.info("Satış tarafında işlem gerçekleşti Alış: {}   Satış: {} ----------------------------> Kademede bekleyen: {}", shareA.getCurrentBuyPrice(), shareA.getCurrentSellPrice(), shareOrderMap.get(ShareOrderStatus.SELL).size());
                     }else {
-                        Database.customerMap.get(buyShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(buyShareOrder);
                         buyShareOrder.setLot(buyShareOrder.getRemainingLot());
                         buyShareOrder.setCost(buyShareOrder.getRemainingCost());
                     }
                     if (sellShareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMOVE)) {
-                        Database.customerMap.get(sellShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(sellShareOrder);
                         shareOrderMap.get(ShareOrderStatus.SELL).take();
                         log.info("Satış tarafında işlem gerçekleşti Alış: {}   Satış: {} ----------------------------> Kademede bekleyen: {}", shareA.getCurrentBuyPrice(), shareA.getCurrentSellPrice(), shareOrderMap.get(ShareOrderStatus.SELL).size());
                     }else {
-                        Database.customerMap.get(sellShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(sellShareOrder);
                         sellShareOrder.setLot(buyShareOrder.getRemainingLot());
                         sellShareOrder.setCost(buyShareOrder.getRemainingCost());
                     }

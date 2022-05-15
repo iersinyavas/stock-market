@@ -1,6 +1,5 @@
 package com.artsoft.stock.service;
 
-import com.artsoft.stock.model.HaveShareInformation;
 import com.artsoft.stock.model.Share;
 import com.artsoft.stock.model.ShareOrder;
 import com.artsoft.stock.model.share.ShareCode;
@@ -40,6 +39,8 @@ public class ShareMarketService {
                 buyShareOrder.setRemainingLot(buyShareOrder.getLot().subtract(sellShareOrder.getLot()));
                 buyShareOrder.setLot(buyShareOrder.getLot().subtract(buyShareOrder.getRemainingLot()));
                 sellShareOrder.setShareOrderOperationStatus(ShareOrderOperationStatus.REMOVE);
+                Database.customerMap.get(buyShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(buyShareOrder);
+                Database.customerMap.get(buyShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(sellShareOrder);
 
             } else if (buyShareOrder.getRemainingLot().compareTo(sellShareOrder.getRemainingLot()) < 0) {
                 sellShareOrder.setRemainingLot(sellShareOrder.getRemainingLot().subtract(buyShareOrder.getRemainingLot()));
@@ -51,6 +52,8 @@ public class ShareMarketService {
                 sellShareOrder.setCost(sellShareOrder.getCost().subtract(sellShareOrder.getRemainingCost()));
                 sellShareOrder.setRemainingLot(sellShareOrder.getLot().subtract(buyShareOrder.getLot()));
                 sellShareOrder.setLot(sellShareOrder.getLot().subtract(buyShareOrder.getRemainingLot()));
+                Database.customerMap.get(buyShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(buyShareOrder);
+                Database.customerMap.get(buyShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(sellShareOrder);
 
             } else {
                 buyShareOrder.setRemainingLot(BigDecimal.ZERO);
@@ -58,6 +61,8 @@ public class ShareMarketService {
 
                 buyShareOrder.setShareOrderOperationStatus(ShareOrderOperationStatus.REMOVE);
                 sellShareOrder.setShareOrderOperationStatus(ShareOrderOperationStatus.REMOVE);
+                Database.customerMap.get(buyShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(buyShareOrder);
+                Database.customerMap.get(buyShareOrder.getCustomerName()).getPortfolio().updatePortfolioProcessShareOrder(sellShareOrder);
             }
         }
     }

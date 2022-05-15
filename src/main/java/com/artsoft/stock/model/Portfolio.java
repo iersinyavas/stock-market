@@ -43,12 +43,8 @@ public class Portfolio {
 
     public void updatePortfolioProcessShareOrder(ShareOrder shareOrder){
         synchronized (lock){
-            this.updateLotProcessShareOrder(shareOrder);
+            this.updateHaveShareInformation(shareOrder);
         }
-    }
-
-    public void updateLotProcessShareOrder(ShareOrder shareOrder){
-        this.updateHaveShareInformation(shareOrder);
     }
 
     public void updateBalance(BigDecimal balance){
