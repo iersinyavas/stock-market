@@ -1,5 +1,6 @@
 package com.artsoft.stock.model;
 
+import com.artsoft.stock.exception.InsufficientBalanceException;
 import com.artsoft.stock.model.share.ShareCode;
 import com.artsoft.stock.repository.Database;
 import com.artsoft.stock.util.GeneralEnumeration;
@@ -39,21 +40,45 @@ public class ShareOrder {
         this.customerName = Thread.currentThread().getName();
         this.shareCode = share.getShareCode();
         this.shareOrderStatus = ShareOrderStatus.values()[RandomData.shareOrderStatusIndex()];
-
+                                        /////////////////////Hisse toplamları fazladan çıkıyor kontrol et
         int buyLot = 0;
         int tempBuyLot = 0;
         int haveShareLot = haveShareInformation.getAvailableHaveShareLot().intValue();
         int sellLot = (haveShareLot == 0) ? 0 : RandomData.randomLot(haveShareLot).intValue();
-        sellLot = (sellLot <= SystemConstants.MAX_LOT && sellLot >= 0) ? sellLot : RandomData.randomLot(SystemConstants.MAX_LOT);
+       // sellLot = (sellLot <= SystemConstants.MAX_LOT && sellLot >= 0) ? sellLot : RandomData.randomLot(SystemConstants.MAX_LOT);
 
-        if (shareOrderStatus.equals(ShareOrderStatus.BUY)) {
-            this.price = RandomData.randomShareOrderPrice(share.getMinPrice(), share.getCurrentSellPrice());
-            buyLot = balance.divide(price, 2, RoundingMode.FLOOR).intValue();
-            buyLot = (buyLot == 0) ? 0 : RandomData.randomLot(buyLot);
-            this.lot = (buyLot <= SystemConstants.MAX_LOT && buyLot >= 0) ? BigDecimal.valueOf(buyLot) : BigDecimal.valueOf(RandomData.randomLot(SystemConstants.MAX_LOT));
-        }else {
-            this.price = RandomData.randomShareOrderPrice(share.getCurrentBuyPrice(), share.getMaxPrice());
+        try{
+            if (shareOrderStatus.equals(ShareOrderStatus.BUY)) {
+                this.price = RandomData.randomShareOrderPrice(share.getMinPrice(), share.getMaxPrice());
+                if (this.price.compareTo(share.getCurrentBuyPrice()) > 0){
+                    this.price = share.getCurrentSellPrice();
+                }
+                buyLot = balance.divide(price, 2, RoundingMode.FLOOR).intValue();
+                buyLot = (buyLot == 0) ? 0 : RandomData.randomLot(buyLot);
+                this.lot = (buyLot <= SystemConstants.SHARE_LOT.intValue() && buyLot >= 0) ? BigDecimal.valueOf(buyLot) : BigDecimal.valueOf(RandomData.randomLot(SystemConstants.SHARE_LOT.intValue()));
+                this.remainingLot = this.lot;
+                this.cost = price.multiply(lot).setScale(2);
+                this.remainingCost = this.cost;
+            }else {
+                this.price = RandomData.randomShareOrderPrice(share.getMinPrice(), share.getMaxPrice());
+                if (this.price.compareTo(share.getCurrentSellPrice()) < 0){
+                    this.price = share.getCurrentBuyPrice();
+                }
+                this.lot = BigDecimal.valueOf(sellLot);
+                this.remainingLot = this.lot;
+                this.cost = price.multiply(lot).setScale(2);
+                this.remainingCost = this.cost;
+            }
+        }catch (IllegalArgumentException e){
+            this.shareOrderStatus = ShareOrderStatus.SELL;
+            this.price = RandomData.randomShareOrderPrice(share.getMinPrice(), share.getMaxPrice());
+            if (this.price.compareTo(share.getCurrentSellPrice()) < 0){
+                this.price = share.getCurrentBuyPrice();
+            }
             this.lot = BigDecimal.valueOf(sellLot);
+            this.remainingLot = this.lot;
+            this.cost = price.multiply(lot).setScale(2);
+            this.remainingCost = this.cost;
         }
 
 //        if (haveShareInformation.getAveragePrice().compareTo(share.getCurrentSellPrice()) < 0){
@@ -86,9 +111,7 @@ public class ShareOrder {
 //            }
 //        }
 
-        this.remainingLot = this.lot;
-        this.cost = price.multiply(lot);
-        this.remainingCost = this.cost;
+
         this.shareOrderOperationStatus = ShareOrderOperationStatus.CREATED;
     }
 

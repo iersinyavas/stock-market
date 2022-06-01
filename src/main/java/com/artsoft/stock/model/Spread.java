@@ -30,6 +30,7 @@ public class Spread {
     Object lock = new Object();
     public void setSpread(Share share, DirectionFlag directionFlag){
         synchronized (lock){
+
             if (directionFlag.equals(DirectionFlag.DOWN)){
                 if (this.getBuyPrice().compareTo(share.getMinPrice()) == 0){
                     this.setBuyPrice(share.getMinPrice());

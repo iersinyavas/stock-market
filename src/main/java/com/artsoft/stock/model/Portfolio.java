@@ -21,48 +21,37 @@ import java.util.concurrent.LinkedBlockingQueue;
 @EqualsAndHashCode
 @ToString
 public class Portfolio {
+    private String customerName;
     private BigDecimal balance;
     private BigDecimal totalPortfolioValue;
-    private BlockingQueue<ShareOrder> tradedShareOrder = new LinkedBlockingQueue<>();
     private Map<ShareCode, HaveShareInformation> haveShareInformationMap = new HashMap<>();
 
     @JsonIgnore
     Object lock = new Object();
 
-    public Portfolio(){
-        this.balance = BigDecimal.valueOf(SystemConstants.CUSTOMER_BALANCE);
-        this.getHaveShareInformationMap().put(ShareCode.ALPHA, new HaveShareInformation(BigDecimal.valueOf(SystemConstants.START_HAVE_SHARE_LOT), Database.shareMap.get(ShareCode.ALPHA).getCurrentSellPrice()));
+    public Portfolio(String customerName){
+        this.customerName = customerName;
+        this.balance = SystemConstants.CUSTOMER_BALANCE;
+        this.getHaveShareInformationMap().put(ShareCode.ALPHA, new HaveShareInformation(SystemConstants.START_HAVE_SHARE_LOT, Database.shareMap.get(ShareCode.ALPHA).getCurrentBuyPrice().setScale(2)));
     }
 
 
     public void sendShareOrder(ShareOrder shareOrder) throws InterruptedException {
         shareOrder.setShareOrderOperationStatus(ShareOrderOperationStatus.SENT);
+       // this.getTradedShareOrder().put(shareOrder);
         Database.shareOrder.get(shareOrder.getShareCode()).get(shareOrder.getPrice()).get(shareOrder.getShareOrderStatus()).put(shareOrder);
     }
 
-
-    public void updatePortfolioProcessShareOrder(ShareOrder shareOrder){
-        synchronized (lock){
-            this.updateHaveShareInformation(shareOrder);
-        }
+    public synchronized void updateBalance(BigDecimal balance){
+        this.setBalance(balance);
     }
 
-    public void updateBalance(BigDecimal balance){
-        synchronized (lock){
-            this.setBalance(balance);
-        }
+    public synchronized BigDecimal getBalance(){
+        return this.balance;
     }
 
-    public BigDecimal getBalance(){
-        synchronized (lock){
-            return this.balance;
-        }
-    }
-
-    public void setBalance(BigDecimal balance){
-        synchronized (lock){
-            this.balance = balance;
-        }
+    public synchronized void setBalance(BigDecimal balance){
+        this.balance = balance;
     }
 
     public void salaryPayment(BigDecimal salaryAmount){
@@ -75,45 +64,52 @@ public class Portfolio {
         }
     }
 
-    public ShareOrder createShareOrder(){
-        ShareCode shareCode = ShareCode.values()[RandomData.shareCodeIndex()];
-        Share share = Database.shareMap.get(shareCode);
-        ShareOrder shareOrder = new ShareOrder(share, this.getBalance(), this.getHaveShareInformationMap().get(shareCode));
-        if (shareOrder.getLot().compareTo(BigDecimal.ZERO) > 0) {
-            this.updatePortfolioProcessShareOrder(shareOrder);
-            return shareOrder;
-        }
-        return null;
+    public synchronized Map<ShareCode, HaveShareInformation> getHaveShareInformationMap() {
+        return haveShareInformationMap;
     }
 
-    public void updateHaveShareInformation(ShareOrder shareOrder){
+    public synchronized void setHaveShareInformationMap(Map<ShareCode, HaveShareInformation> haveShareInformationMap) {
+        this.haveShareInformationMap = haveShareInformationMap;
+    }
+
+    public ShareOrder createShareOrder(){
         synchronized (lock){
-            HaveShareInformation haveShareInformation = this.getHaveShareInformationMap().get(shareOrder.getShareCode());
-            if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.SELL)){
-                if (shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.CREATED)){
-                    haveShareInformation.setAvailableHaveShareLot(haveShareInformation.getAvailableHaveShareLot().subtract(shareOrder.getLot()));
-                }
-                if (shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMOVE) || shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMAINING)){
-                    haveShareInformation.setHaveShareLot(haveShareInformation.getHaveShareLot().subtract(shareOrder.getLot()));
-                    haveShareInformation.setTotalCost(haveShareInformation.getTotalCost().subtract(shareOrder.getCost()));
-                    haveShareInformation.setAveragePrice(haveShareInformation.getTotalCost().divide(haveShareInformation.getHaveShareLot(), 2, RoundingMode.FLOOR).setScale(2, RoundingMode.FLOOR));
-                    this.updateBalance(this.getBalance().add(shareOrder.getCost()));
-                }
-            }else {
-                if (shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.CREATED)){
-                    this.updateBalance(this.getBalance().subtract(shareOrder.getCost()));
-                }
-                if (shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMOVE) || shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMAINING)){
-                    haveShareInformation.setAvailableHaveShareLot(haveShareInformation.getAvailableHaveShareLot().add(shareOrder.getLot()));
-                    haveShareInformation.setHaveShareLot(haveShareInformation.getHaveShareLot().add(shareOrder.getLot()));
-                    haveShareInformation.setTotalCost(haveShareInformation.getTotalCost().add(shareOrder.getCost()));
-                    haveShareInformation.setAveragePrice(haveShareInformation.getTotalCost().divide(haveShareInformation.getHaveShareLot(), 2, RoundingMode.FLOOR).setScale(2, RoundingMode.FLOOR));
-                }
+            ShareCode shareCode = ShareCode.values()[RandomData.shareCodeIndex()];
+            Share share = Database.shareMap.get(shareCode);
+            ShareOrder shareOrder = new ShareOrder(share, this.getBalance(), this.getHaveShareInformationMap().get(shareCode));
+            if (shareOrder.getLot().compareTo(BigDecimal.ZERO) > 0) {
+                this.updatePortfolioBeforeProcessShareOrder(shareOrder);
+                return shareOrder;
+            }
+            return null;
+        }
+    }
+
+
+    public void updatePortfolioBeforeProcessShareOrder(ShareOrder shareOrder){
+        if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.SELL)) {
+            if (shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.CREATED)) {
+                this.getHaveShareInformationMap().get(shareOrder.getShareCode()).setAvailableHaveShareLot(this.getHaveShareInformationMap().get(shareOrder.getShareCode())
+                        .getAvailableHaveShareLot().subtract(shareOrder.getLot()));
+            }
+        }else {
+            if (shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.CREATED)){
+                this.updateBalance(this.getBalance().subtract(shareOrder.getCost()));
             }
         }
-
     }
 
-
+    public void updatePortfolioNotProcessedShareOrder(ShareOrder shareOrder){
+        if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.SELL)) {
+            if (shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.SENT) || shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMAINING)) {
+                this.getHaveShareInformationMap().get(shareOrder.getShareCode()).setAvailableHaveShareLot(this.getHaveShareInformationMap().get(shareOrder.getShareCode())
+                        .getAvailableHaveShareLot().add(shareOrder.getLot()));
+            }
+        }else {
+            if (shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.SENT) || shareOrder.getShareOrderOperationStatus().equals(ShareOrderOperationStatus.REMAINING)){
+                this.updateBalance(this.getBalance().add(shareOrder.getCost()));
+            }
+        }
+    }
 
 }

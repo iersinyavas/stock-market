@@ -1,7 +1,5 @@
 package com.artsoft.stock.model;
 
-import com.artsoft.stock.model.share.ShareCode;
-import com.artsoft.stock.util.GeneralEnumeration.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,5 +25,45 @@ public class HaveShareInformation {
         this.averagePrice = averagePrice;
         this.totalCost = availableHaveShareLot.multiply(this.averagePrice);
  //       this.netCost = this.totalCost;
+    }
+
+    public synchronized BigDecimal getAvailableHaveShareLot() {
+        return availableHaveShareLot;
+    }
+
+    public synchronized void setAvailableHaveShareLot(BigDecimal availableHaveShareLot) {
+        this.availableHaveShareLot = availableHaveShareLot;
+    }
+
+    public synchronized BigDecimal getHaveShareLot() {
+        return haveShareLot;
+    }
+
+    public synchronized void setHaveShareLot(BigDecimal haveShareLot) {
+        this.haveShareLot = haveShareLot;
+    }
+
+    public synchronized BigDecimal getAveragePrice() {
+        return averagePrice;
+    }
+
+    public synchronized void setAveragePrice(BigDecimal averagePrice) {
+        this.averagePrice = averagePrice;
+    }
+
+    public synchronized BigDecimal getTotalCost() {
+        return totalCost;
+    }
+
+    public synchronized void setTotalCost(BigDecimal totalCost) {
+        this.totalCost = totalCost;
+    }
+
+    public synchronized BigDecimal getCurrentTotalValue() {
+        return currentTotalValue;
+    }
+
+    public synchronized void setCurrentTotalValue(BigDecimal currentTotalValue) {
+        this.currentTotalValue = currentTotalValue;
     }
 }

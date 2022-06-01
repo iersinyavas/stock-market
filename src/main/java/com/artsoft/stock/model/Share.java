@@ -10,6 +10,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -33,6 +36,7 @@ public class Share {
     private BigDecimal currentSellPrice;
     private BigDecimal maxPrice;
     private BigDecimal minPrice;
+    private BigDecimal lot;
     private Spread spread;
     Object lock = new Object();
 
@@ -100,4 +104,5 @@ public class Share {
         this.setStartPrice(this.getCurrentBuyPrice().divide(rate, 2, RoundingMode.FLOOR));
         this.updateShare();
     }
+
 }
