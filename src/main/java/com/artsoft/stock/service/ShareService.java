@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 @Slf4j
 @EnableScheduling
 public class ShareService {
-    @Scheduled(cron = "0 */2 * ? * *")
+   // @Scheduled(cron = "0 */2 * ? * *")
     public void nexDaySharePrice() throws InterruptedException {
 
         Database.customerMap.keySet().forEach(customerName -> {
@@ -34,12 +34,13 @@ public class ShareService {
         for (BigDecimal price = share.getMinPrice(); price.compareTo(share.getMaxPrice())<=0; price = price.add(BigDecimal.valueOf(0.01))){
             while (!Database.shareOrder.get(share.getShareCode()).get(price).get(GeneralEnumeration.ShareOrderStatus.BUY).isEmpty()){
                 ShareOrder shareOrder = Database.shareOrder.get(share.getShareCode()).get(price).get(GeneralEnumeration.ShareOrderStatus.BUY).take();
-                Database.customerMap.get(shareOrder.getCustomerName()).getPortfolio().updatePortfolioNotProcessedShareOrder(shareOrder);
+
+                Database.customerMap.get(shareOrder.getCustomerName()).getPortfolio().addBalance(shareOrder.getPrice().multiply(BigDecimal.valueOf(shareOrder.getLot().remainingCapacity())));
             }
 
             while (!Database.shareOrder.get(share.getShareCode()).get(price).get(GeneralEnumeration.ShareOrderStatus.SELL).isEmpty()){
                 ShareOrder shareOrder = Database.shareOrder.get(share.getShareCode()).get(price).get(GeneralEnumeration.ShareOrderStatus.SELL).take();
-                Database.customerMap.get(shareOrder.getCustomerName()).getPortfolio().updatePortfolioNotProcessedShareOrder(shareOrder);
+                Database.customerMap.get(shareOrder.getCustomerName()).getPortfolio().getHaveShareInformationMap().get(shareOrder.getShareCode()).getHaveShareLot().put(shareOrder.getLot().take());
             }
         }
         share.updateShare();

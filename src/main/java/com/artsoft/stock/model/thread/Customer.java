@@ -25,18 +25,16 @@ public class Customer extends Thread{
     private String customerName;
     private Portfolio portfolio;
     private BigDecimal salary;
-    private BlockingQueue<BigDecimal> salaryQueue = new LinkedBlockingQueue<>();
     public Boolean isWait = Boolean.FALSE;
     public Object lock = new Object();
 
     @JsonIgnore
     private Random random = new Random();
 
-    public Customer(String customerName, Portfolio portfolio, BigDecimal salary){
-        this.customerName = customerName;
+    public Customer(Portfolio portfolio, BigDecimal salary){
+        this.customerName = this.getName();
         this.portfolio = portfolio;
         this.salary = salary;
-        Database.processedShareOrders.put(customerName, new LinkedBlockingQueue<>());
     }
 
     public void salaryPayment(){

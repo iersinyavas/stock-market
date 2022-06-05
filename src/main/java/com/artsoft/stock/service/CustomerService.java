@@ -14,8 +14,19 @@ import org.springframework.stereotype.Service;
 @EnableScheduling
 public class CustomerService {
 
-    private Customer createCustomer(){
-        return new Customer(Thread.currentThread().getName(), new Portfolio(Thread.currentThread().getName()), SystemConstants.CUSTOMER_SALARY);
+    @Scheduled(cron = "*/5 * * * * *")
+    private void createCustomer(){
+        while (true){
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            Customer customer = new Customer(new Portfolio(), SystemConstants.CUSTOMER_SALARY);
+            Database.customerMap.put(customer.getName(), customer);
+            customer.start();
+            log.info("{} oluştu.", customer.getCustomerName());
+        }
     }
 
 //    @Scheduled(cron = "0 */5 * ? * *")

@@ -1,5 +1,6 @@
 package com.artsoft.stock.model;
 
+import com.artsoft.stock.model.share.ShareCertificate;
 import com.artsoft.stock.model.share.ShareCode;
 import com.artsoft.stock.repository.Database;
 import com.artsoft.stock.util.GeneralEnumeration.*;
@@ -20,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Stream;
 
@@ -36,6 +38,7 @@ public class Share {
     private BigDecimal currentSellPrice;
     private BigDecimal maxPrice;
     private BigDecimal minPrice;
+    private BlockingQueue<ShareCertificate> shareCertificateQueue = new LinkedBlockingQueue<>();
     private BigDecimal lot;
     private Spread spread;
     Object lock = new Object();
@@ -48,11 +51,28 @@ public class Share {
         this.maxPrice = this.startPrice.add(this.startPrice.divide(BigDecimal.TEN)).setScale(2);
         this.minPrice = this.startPrice.subtract(this.startPrice.divide(BigDecimal.TEN)).setScale(2);
         this.spread = new Spread(this);
+        /*try {
+            for (int i=0; i<10000; i++){
+                this.getShareCertificateQueue().put(new ShareCertificate(this.getShareCode()));
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }*/
         log.info("Hisse Max: {} Min: {}", this.maxPrice, this.minPrice);
     }
 
     public void setStartPrice(BigDecimal startPrice) {
         this.startPrice = startPrice;
+    }
+
+    public void freeCapitalIncrease(){
+        try {
+            for (int i=0; i<10000; i++){
+                this.getShareCertificateQueue().put(new ShareCertificate(this.getShareCode()));
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public void setCurrentBuyPrice(BigDecimal currentBuyPrice) {
@@ -93,16 +113,5 @@ public class Share {
 
     }
 
-    public void freeCapitalIncrease(BigDecimal freeCapitalIncreaseRate){
-        Set<String> customerNames = Database.customerMap.keySet();
-        BigDecimal rate = Objects.isNull(freeCapitalIncreaseRate) ? SystemConstants.FREE_CAPITAL_INCREASE_RATE : freeCapitalIncreaseRate;
-        rate = rate.divide(BigDecimal.valueOf(100), 2, RoundingMode.FLOOR).setScale(2, RoundingMode.FLOOR).add(BigDecimal.valueOf(1));
-        for (String customerName : customerNames){
-            HaveShareInformation haveShareInformation = Database.customerMap.get(customerName).getPortfolio().getHaveShareInformationMap().get(this.getShareCode());
-            haveShareInformation.setHaveShareLot(haveShareInformation.getHaveShareLot().multiply(rate));
-        }
-        this.setStartPrice(this.getCurrentBuyPrice().divide(rate, 2, RoundingMode.FLOOR));
-        this.updateShare();
-    }
 
 }

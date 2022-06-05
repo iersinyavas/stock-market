@@ -74,7 +74,12 @@ public class SellProcessShareMarket extends Thread{
                     ShareOrder buyShareOrder = buyShareOrderStatusQueue.peek();
                     ShareOrder sellShareOrder = sellShareOrderStatusQueue.peek();
 
-                    shareMarketService.processedShareOrders(share, buyShareOrderStatusQueue, sellShareOrderStatusQueue, buyShareOrder, sellShareOrder);
+                    Customer buyCustomer = Database.customerMap.get(buyShareOrder.getCustomerName());
+                    Customer sellCustomer = Database.customerMap.get(sellShareOrder.getCustomerName());
+
+                    shareMarketService.processedShareOrders(share, buyShareOrderStatusQueue, sellShareOrderStatusQueue, buyShareOrder, sellShareOrder,  buyCustomer, sellCustomer);
+                    log.info("Emir: {} ----- Alış: {}   Satış: {} ----- Emir: {},   Alan: {} --- Satan: {}", buyShareOrderStatusQueue.size(), share.getCurrentBuyPrice(), share.getCurrentSellPrice(),
+                            sellShareOrderStatusQueue.size(), buyCustomer.getCustomerName(), sellCustomer.getCustomerName());
                 } catch (InterruptedException ex) {
 
                 } catch (NullPointerException np){
