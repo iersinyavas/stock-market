@@ -4,6 +4,6 @@ public class InsufficientBalanceException extends Exception {
 
     @Override
     public String getMessage() {
-        return "Bakiyeniz Yetersiz";
+        return Thread.currentThread().getName() + " Müşterisinin Bakiyesi Yetersiz";
     }
 }

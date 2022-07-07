@@ -11,8 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import com.artsoft.stock.util.GeneralEnumeration.*;
 
 import java.util.concurrent.BlockingQueue;
 
@@ -40,6 +39,8 @@ public class BuyProcessShareMarket extends Thread{
         }
     }
 
+
+
     @Override
     public void run() {
         while (true) {
@@ -51,9 +52,8 @@ public class BuyProcessShareMarket extends Thread{
                         lock.wait();
                         isWait = Boolean.FALSE;
                     }
-                    BlockingQueue<ShareOrder> buyShareOrderStatusQueue = Database.shareOrder.get(share.getShareCode()).get(share.getCurrentBuyPrice()).get(GeneralEnumeration.ShareOrderStatus.BUY);
-                    BlockingQueue<ShareOrder> sellShareOrderStatusQueue = Database.shareOrder.get(share.getShareCode()).get(share.getCurrentBuyPrice()).get(GeneralEnumeration.ShareOrderStatus.SELL);
-
+                    BlockingQueue<ShareOrder> buyShareOrderStatusQueue = Database.limitShareOrder.get(share.getShareCode()).get(share.getCurrentBuyPrice()).get(ShareOrderStatus.BUY);
+                    BlockingQueue<ShareOrder> sellShareOrderStatusQueue = Database.limitShareOrder.get(share.getShareCode()).get(share.getCurrentBuyPrice()).get(ShareOrderStatus.SELL);
 
                     if (buyShareOrderStatusQueue.isEmpty()){
                         share.getSpread().setSpread(share, GeneralEnumeration.DirectionFlag.DOWN);
@@ -72,7 +72,7 @@ public class BuyProcessShareMarket extends Thread{
                     Customer sellCustomer = Database.customerMap.get(sellShareOrder.getCustomerName());
 
                     shareMarketService.processedShareOrders(share, buyShareOrderStatusQueue, sellShareOrderStatusQueue, buyShareOrder, sellShareOrder, buyCustomer, sellCustomer);
-                    log.info("Emir: {} ----- Alış: {}   Satış: {} ----- Emir: {},   Alan: {} --- Satan: {}", buyShareOrderStatusQueue.size(), share.getCurrentBuyPrice(), share.getCurrentSellPrice(),
+                    log.info("Emir: {} ----- Alış: {}   Satış: {} ----- Emir: {},   Alan: {} --- Satan: {}       ALIŞ", buyShareOrderStatusQueue.size(), share.getCurrentBuyPrice(), share.getCurrentSellPrice(),
                             sellShareOrderStatusQueue.size(), buyCustomer.getCustomerName(), sellCustomer.getCustomerName());
                 } catch (InterruptedException ex) {
 

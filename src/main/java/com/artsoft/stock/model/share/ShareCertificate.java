@@ -14,18 +14,14 @@ import java.math.BigDecimal;
 @Setter
 @Slf4j
 public class ShareCertificate {
-    private Long shareCertificateNo;
+    private Integer shareCertificateNo;
     private ShareCode shareCode;
     private BigDecimal price;
     private BigDecimal beforePrice;
 
-    private static Long nextShareCertificateNo = 0L;
-    public ShareCertificate(ShareCode shareCode) {
-        this.shareCertificateNo = nextShareCertificateNo();
+    public ShareCertificate(ShareCode shareCode, Integer shareCertificateNo) {
+        this.shareCertificateNo = shareCertificateNo;
         this.shareCode = shareCode;
     }
 
-    public static Long nextShareCertificateNo(){
-        return ++nextShareCertificateNo;
-    }
 }

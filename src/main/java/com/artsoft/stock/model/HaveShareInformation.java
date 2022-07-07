@@ -13,7 +13,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 @AllArgsConstructor
-@NoArgsConstructor
 @Getter
 @Setter
 public class HaveShareInformation {
@@ -23,17 +22,10 @@ public class HaveShareInformation {
     private BigDecimal totalCost;
     private BigDecimal currentTotalValue;
 
-    public HaveShareInformation(BigDecimal averagePrice){
-        try {
-            for (int i = 0; i< SystemConstants.START_HAVE_SHARE_LOT.intValue(); i++){
-                this.haveShareLot.put(new ShareCertificate(ShareCode.ALPHA));
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+    public HaveShareInformation(){
         this.availableHaveShareLot = haveShareLot;
-        this.averagePrice = averagePrice;
-        this.totalCost = this.averagePrice.multiply(BigDecimal.valueOf(haveShareLot.size()));
+       // this.averagePrice = averagePrice;
+       // this.totalCost = this.averagePrice.multiply(BigDecimal.valueOf(haveShareLot.size()));
     }
 
     public synchronized BigDecimal getAveragePrice() {

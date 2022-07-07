@@ -51,13 +51,13 @@ public class Share {
         this.maxPrice = this.startPrice.add(this.startPrice.divide(BigDecimal.TEN)).setScale(2);
         this.minPrice = this.startPrice.subtract(this.startPrice.divide(BigDecimal.TEN)).setScale(2);
         this.spread = new Spread(this);
-        /*try {
-            for (int i=0; i<10000; i++){
-                this.getShareCertificateQueue().put(new ShareCertificate(this.getShareCode()));
+        try {
+            for (int i=0; i<SystemConstants.SHARE_LOT; i++){
+                this.getShareCertificateQueue().put(new ShareCertificate(this.getShareCode(), i));
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
-        }*/
+        }
         log.info("Hisse Max: {} Min: {}", this.maxPrice, this.minPrice);
     }
 
@@ -68,7 +68,7 @@ public class Share {
     public void freeCapitalIncrease(){
         try {
             for (int i=0; i<10000; i++){
-                this.getShareCertificateQueue().put(new ShareCertificate(this.getShareCode()));
+                this.getShareCertificateQueue().put(new ShareCertificate(this.getShareCode(), i));
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -107,6 +107,22 @@ public class Share {
             this.setSpread(this.getSpread().createSpread(this));
             log.info("Hisse Max: {} Min: {}", this.getMaxPrice(), this.getMinPrice());
         }
+    }
+
+    public BlockingQueue<ShareCertificate> buyFromCompany(int buyLotCount){
+        try {
+            BlockingQueue<ShareCertificate> sellWillShareCertificate = new LinkedBlockingQueue<>();
+            while (!this.getShareCertificateQueue().isEmpty() && buyLotCount > 0){
+                ShareCertificate shareCertificate = this.getShareCertificateQueue().take();
+                shareCertificate.setPrice(this.getCurrentSellPrice());
+                sellWillShareCertificate.put(shareCertificate);
+                buyLotCount--;
+            }
+            return sellWillShareCertificate;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public void dividendPayment(){

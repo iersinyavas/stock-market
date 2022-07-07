@@ -7,7 +7,6 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -67,12 +66,12 @@ public class Spread {
         for (int i=min.intValue(); i<=max.intValue(); i++){
             BigDecimal value = BigDecimal.valueOf(i).divide(BigDecimal.valueOf(100)).setScale(2);
             try {
-                BlockingQueue<ShareOrder> buyShareOrders = Database.shareOrder.get(ShareCode.ALPHA).get(value).get(ShareOrderStatus.BUY);
-                BlockingQueue<ShareOrder> sellShareOrders = Database.shareOrder.get(ShareCode.ALPHA).get(value).get(ShareOrderStatus.SELL);
+                BlockingQueue<ShareOrder> buyShareOrders = Database.limitShareOrder.get(ShareCode.ALPHA).get(value).get(ShareOrderStatus.BUY);
+                BlockingQueue<ShareOrder> sellShareOrders = Database.limitShareOrder.get(ShareCode.ALPHA).get(value).get(ShareOrderStatus.SELL);
             }catch (NullPointerException e){
-                Database.shareOrder.get(ShareCode.ALPHA).put(value, new HashMap<>());
-                Database.shareOrder.get(ShareCode.ALPHA).get(value).put(ShareOrderStatus.BUY, new LinkedBlockingQueue<>());
-                Database.shareOrder.get(ShareCode.ALPHA).get(value).put(ShareOrderStatus.SELL, new LinkedBlockingQueue<>());
+                Database.limitShareOrder.get(ShareCode.ALPHA).put(value, new HashMap<>());
+                Database.limitShareOrder.get(ShareCode.ALPHA).get(value).put(ShareOrderStatus.BUY, new LinkedBlockingQueue<>());
+                Database.limitShareOrder.get(ShareCode.ALPHA).get(value).put(ShareOrderStatus.SELL, new LinkedBlockingQueue<>());
             }
         }
         return this;

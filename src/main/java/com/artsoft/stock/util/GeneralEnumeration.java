@@ -10,8 +10,7 @@ public class GeneralEnumeration {
     protected GeneralEnumeration(){};
 
     public enum ShareOrderStatus {
-
-        BUY, SELL;
+        BUY, SELL
 
     }
 
@@ -25,6 +24,10 @@ public class GeneralEnumeration {
 
     public enum InvestmentResult{
         PROFIT, LOSS
+    }
+
+    public enum ShareOrderType{
+        LIMIT, MARKET
     }
 
     public enum DirectionFlag{

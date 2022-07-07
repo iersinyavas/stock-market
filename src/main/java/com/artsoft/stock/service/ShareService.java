@@ -4,6 +4,7 @@ import com.artsoft.stock.model.Share;
 import com.artsoft.stock.model.ShareOrder;
 import com.artsoft.stock.model.share.ShareCode;
 import com.artsoft.stock.model.thread.BuyProcessShareMarket;
+import com.artsoft.stock.model.thread.CustomerCreator;
 import com.artsoft.stock.model.thread.SellProcessShareMarket;
 import com.artsoft.stock.repository.Database;
 import com.artsoft.stock.util.GeneralEnumeration;
@@ -18,12 +19,14 @@ import java.math.BigDecimal;
 @Slf4j
 @EnableScheduling
 public class ShareService {
-   // @Scheduled(cron = "0 */2 * ? * *")
+    @Scheduled(cron = "0 */2 * ? * *")
     public void nexDaySharePrice() throws InterruptedException {
-
+        CustomerCreator createCustomer = Database.systemThread.get("createCustomer");
+        createCustomer.setIsWait(Boolean.TRUE);
         Database.customerMap.keySet().forEach(customerName -> {
             Database.customerMap.get(customerName).setIsWait(Boolean.TRUE);
         });
+
         BuyProcessShareMarket buyProcess = (BuyProcessShareMarket)Database.processShareOrderThread.get(GeneralEnumeration.ShareOrderStatus.BUY);
         SellProcessShareMarket sellProcess = (SellProcessShareMarket)Database.processShareOrderThread.get(GeneralEnumeration.ShareOrderStatus.SELL);
         buyProcess.setIsWait(Boolean.TRUE);
@@ -32,14 +35,14 @@ public class ShareService {
         Thread.sleep(15000);
         Share share = Database.shareMap.get(ShareCode.ALPHA);
         for (BigDecimal price = share.getMinPrice(); price.compareTo(share.getMaxPrice())<=0; price = price.add(BigDecimal.valueOf(0.01))){
-            while (!Database.shareOrder.get(share.getShareCode()).get(price).get(GeneralEnumeration.ShareOrderStatus.BUY).isEmpty()){
-                ShareOrder shareOrder = Database.shareOrder.get(share.getShareCode()).get(price).get(GeneralEnumeration.ShareOrderStatus.BUY).take();
+            while (!Database.limitShareOrder.get(share.getShareCode()).get(price).get(GeneralEnumeration.ShareOrderStatus.BUY).isEmpty()){
+                ShareOrder shareOrder = Database.limitShareOrder.get(share.getShareCode()).get(price).get(GeneralEnumeration.ShareOrderStatus.BUY).take();
 
                 Database.customerMap.get(shareOrder.getCustomerName()).getPortfolio().addBalance(shareOrder.getPrice().multiply(BigDecimal.valueOf(shareOrder.getLot().remainingCapacity())));
             }
 
-            while (!Database.shareOrder.get(share.getShareCode()).get(price).get(GeneralEnumeration.ShareOrderStatus.SELL).isEmpty()){
-                ShareOrder shareOrder = Database.shareOrder.get(share.getShareCode()).get(price).get(GeneralEnumeration.ShareOrderStatus.SELL).take();
+            while (!Database.limitShareOrder.get(share.getShareCode()).get(price).get(GeneralEnumeration.ShareOrderStatus.SELL).isEmpty()){
+                ShareOrder shareOrder = Database.limitShareOrder.get(share.getShareCode()).get(price).get(GeneralEnumeration.ShareOrderStatus.SELL).take();
                 Database.customerMap.get(shareOrder.getCustomerName()).getPortfolio().getHaveShareInformationMap().get(shareOrder.getShareCode()).getHaveShareLot().put(shareOrder.getLot().take());
             }
         }
@@ -51,6 +54,8 @@ public class ShareService {
         for (String customerName : Database.customerMap.keySet()){
             Database.customerMap.get(customerName).openLock();
         }
+        Thread.sleep(12000);
+        createCustomer.openLock();
 
     }
 

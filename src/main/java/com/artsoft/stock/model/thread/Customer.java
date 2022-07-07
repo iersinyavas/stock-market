@@ -1,20 +1,20 @@
 package com.artsoft.stock.model.thread;
 
 import com.artsoft.stock.model.Portfolio;
+import com.artsoft.stock.model.Share;
 import com.artsoft.stock.model.ShareOrder;
+import com.artsoft.stock.model.share.ShareCode;
 import com.artsoft.stock.repository.Database;
+import com.artsoft.stock.util.GeneralEnumeration;
 import com.artsoft.stock.util.SystemConstants;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 
 import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 @Data
 @AllArgsConstructor
@@ -41,6 +41,7 @@ public class Customer extends Thread{
         this.getPortfolio().salaryPayment(this.getSalary());
         log.info("Maaşlar yattı");
     }
+
 
     public void openLock(){
         synchronized (lock){

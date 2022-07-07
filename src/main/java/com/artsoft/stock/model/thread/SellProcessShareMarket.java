@@ -12,9 +12,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 import java.util.concurrent.BlockingQueue;
 
@@ -42,10 +39,10 @@ public class SellProcessShareMarket extends Thread{
         }
     }
 
-    @Autowired
-    public SellProcessShareMarket(ShareMarketService shareMarketService) {
-        this.shareMarketService = shareMarketService;
-    }
+
+
+
+
 
     @Override
     public void run() {
@@ -58,28 +55,31 @@ public class SellProcessShareMarket extends Thread{
                         lock.wait();
                         isWait = Boolean.FALSE;
                     }
-                    BlockingQueue<ShareOrder> buyShareOrderStatusQueue = Database.shareOrder.get(share.getShareCode()).get(share.getCurrentSellPrice()).get(GeneralEnumeration.ShareOrderStatus.BUY);
-                    BlockingQueue<ShareOrder> sellShareOrderStatusQueue = Database.shareOrder.get(share.getShareCode()).get(share.getCurrentSellPrice()).get(GeneralEnumeration.ShareOrderStatus.SELL);
+                    BlockingQueue<ShareOrder> buyLimitShareOrderStatusQueue = Database.limitShareOrder.get(share.getShareCode()).get(share.getCurrentSellPrice()).get(GeneralEnumeration.ShareOrderStatus.BUY);
+                    BlockingQueue<ShareOrder> sellLimitShareOrderStatusQueue = Database.limitShareOrder.get(share.getShareCode()).get(share.getCurrentSellPrice()).get(GeneralEnumeration.ShareOrderStatus.SELL);
 
-                    if (sellShareOrderStatusQueue.isEmpty()){
+                    BlockingQueue<ShareOrder> buyMarketShareOrderQueue = Database.marketShareOrder.get(ShareCode.ALPHA).get(GeneralEnumeration.ShareOrderStatus.BUY);
+                    BlockingQueue<ShareOrder> sellMarketShareOrderQueue = Database.marketShareOrder.get(ShareCode.ALPHA).get(GeneralEnumeration.ShareOrderStatus.SELL);
+
+                    if (sellLimitShareOrderStatusQueue.isEmpty()){
                         share.getSpread().setSpread(share, GeneralEnumeration.DirectionFlag.UP);
                         Database.shareMap.put(share.getShareCode(), share);
                         continue;
                     }
 
-                    if(buyShareOrderStatusQueue.isEmpty()){
+                    if(buyLimitShareOrderStatusQueue.isEmpty()){
                         continue;
                     }
 
-                    ShareOrder buyShareOrder = buyShareOrderStatusQueue.peek();
-                    ShareOrder sellShareOrder = sellShareOrderStatusQueue.peek();
+                    ShareOrder buyShareOrder = buyLimitShareOrderStatusQueue.peek();
+                    ShareOrder sellShareOrder = sellLimitShareOrderStatusQueue.peek();
 
                     Customer buyCustomer = Database.customerMap.get(buyShareOrder.getCustomerName());
                     Customer sellCustomer = Database.customerMap.get(sellShareOrder.getCustomerName());
 
-                    shareMarketService.processedShareOrders(share, buyShareOrderStatusQueue, sellShareOrderStatusQueue, buyShareOrder, sellShareOrder,  buyCustomer, sellCustomer);
-                    log.info("Emir: {} ----- Alış: {}   Satış: {} ----- Emir: {},   Alan: {} --- Satan: {}", buyShareOrderStatusQueue.size(), share.getCurrentBuyPrice(), share.getCurrentSellPrice(),
-                            sellShareOrderStatusQueue.size(), buyCustomer.getCustomerName(), sellCustomer.getCustomerName());
+                    shareMarketService.processedShareOrders(share, buyLimitShareOrderStatusQueue, sellLimitShareOrderStatusQueue, buyShareOrder, sellShareOrder,  buyCustomer, sellCustomer);
+                    log.info("Emir: {} ----- Alış: {}   Satış: {} ----- Emir: {},   Alan: {} --- Satan: {}       SATIŞ", buyLimitShareOrderStatusQueue.size(), share.getCurrentBuyPrice(), share.getCurrentSellPrice(),
+                            sellLimitShareOrderStatusQueue.size(), buyCustomer.getCustomerName(), sellCustomer.getCustomerName());
                 } catch (InterruptedException ex) {
 
                 } catch (NullPointerException np){
