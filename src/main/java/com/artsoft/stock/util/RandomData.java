@@ -16,7 +16,7 @@ public class RandomData {
         if (limit.compareTo(BigDecimal.ZERO) == 0){
             return BigDecimal.ZERO;
         }
-        int randomLot = random.nextInt(limit.intValue())+1;
+        int randomLot = random.nextInt(limit.intValue()+1);
         return randomLot == 0 ? BigDecimal.ONE : BigDecimal.valueOf(randomLot);
     }
 

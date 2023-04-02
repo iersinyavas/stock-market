@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ShareOrderSummaryInfoForMatchDTO {
+    private BigDecimal price;
     private String shareOrderStatus;
     private BigDecimal lot;
 }

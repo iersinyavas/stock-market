@@ -1,7 +1,6 @@
 package com.artsoft.stock.batch;
 
 import com.artsoft.stock.service.StockMarketService;
-import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +23,10 @@ public class ShareOrderMatcher extends Thread {
             synchronized (lock) {
                 lock.wait();
                 Thread.sleep(random.nextInt(5000));
-                stockMarketService.matchShareOrderForOpenSession();
+                while (true){
+                    stockMarketService.matchShareOrderForOpenSession();
+                    Thread.sleep(random.nextInt(1000));
+                }
             }
         } catch (InterruptedException e) {
             e.printStackTrace();

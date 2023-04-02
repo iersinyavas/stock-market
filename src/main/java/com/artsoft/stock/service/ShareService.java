@@ -2,10 +2,15 @@ package com.artsoft.stock.service;
 
 import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.repository.ShareRepository;
+import com.artsoft.stock.util.PriceStep;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 
 @Service
 public class ShareService {
@@ -25,5 +30,16 @@ public class ShareService {
 
     public void openSession(){
 
+    }
+
+    public Map<BigDecimal, BlockingQueue> init(){
+        BigDecimal price = BigDecimal.ONE;
+        Map<BigDecimal, BlockingQueue> priceMap = new HashMap<>();
+        BigDecimal maxPrice = price.add(price.divide(BigDecimal.valueOf(10), 2, RoundingMode.FLOOR));
+        BigDecimal minPrice = price.subtract(price.divide(BigDecimal.valueOf(10), 2, RoundingMode.FLOOR));
+        PriceStep priceStep = new PriceStep(price, minPrice, maxPrice);
+        priceStep.initUpPrice(priceMap);
+        priceStep.initDownPrice(priceMap);
+        return priceMap;
     }
 }

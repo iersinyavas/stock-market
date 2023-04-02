@@ -1,13 +1,13 @@
 package com.artsoft.stock.service;
 
 import com.artsoft.stock.dto.ShareOrderSummaryInfoForMatchDTO;
-import com.artsoft.stock.dto.ShareSummaryInfoTransport;
 import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.entity.ShareOrder;
 import com.artsoft.stock.entity.Trader;
 import com.artsoft.stock.repository.ShareOrderRepository;
 import com.artsoft.stock.repository.ShareRepository;
 import com.artsoft.stock.repository.TraderRepository;
+import com.artsoft.stock.util.ShareOrderUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,11 +31,19 @@ public class StockMarketService {
     private ShareOrderRepository shareOrderRepository;
     @Autowired
     private ShareRepository shareRepository;
+    @Autowired
+    private ShareOrderUtil shareOrderUtil;
 
     public void matchShareOrderForOpenSession() throws InterruptedException {
-        List<Long> deleteShareOrderId = new ArrayList<>();
-        ShareSummaryInfoTransport shareSummaryInfoTransport = this.setOpenPriceShare();
-        List<ShareOrder> shareOrderListForOpenSession = shareOrderRepository.getShareOrderListForOpenSession(shareSummaryInfoTransport.getCurrentSellPrice(), shareSummaryInfoTransport.getCurrentBuyPrice());
+        List<ShareOrder> deleteShareOrderList = new ArrayList<>();
+        List<ShareOrderSummaryInfoForMatchDTO> processSell = shareOrderRepository.getSummaryInfoForSellMatch();
+        List<ShareOrderSummaryInfoForMatchDTO> processBuy = shareOrderRepository.getSummaryInfoForBuyMatch();
+
+        if (processBuy.get(0).getPrice().compareTo(processSell.get(0).getPrice()) != 0 && processBuy.get(0).getPrice().compareTo(processSell.get(1).getPrice()) != 0){
+            return;
+        }
+
+        List<ShareOrder> shareOrderListForOpenSession = shareOrderRepository.getShareOrderListForSelectPrice(processBuy.get(0).getPrice());
         Map<String, List<ShareOrder>> sellOrBuyShareOrderMap = shareOrderListForOpenSession.stream().collect(Collectors.groupingBy(ShareOrder::getShareOrderStatus));
         List<ShareOrder> sortedSellShareOrderList = sellOrBuyShareOrderMap.get("SELL").stream().sorted(Comparator.comparing(ShareOrder::getPrice)).collect(Collectors.toList());
         List<ShareOrder> sortedBuyShareOrderList = sellOrBuyShareOrderMap.get("BUY").stream().sorted(Comparator.comparing(ShareOrder::getPrice).reversed()).collect(Collectors.toList());
@@ -46,129 +54,59 @@ public class StockMarketService {
             ShareOrder sell = sellShareOrderQueue.peek();
             ShareOrder buy = buyShareOrderQueue.peek();
 
-            if (sell.getLot().compareTo(buy.getPrice()) == 0){
-                Trader traderSell = traderRepository.findById(sell.getTrader().getTraderId()).get();
-                traderSell.setTotalAmount(traderSell.getTotalAmount().subtract(sell.getLot().multiply(traderSell.getCost())));
-                traderSell.setHaveLot(traderSell.getHaveLot().subtract(sell.getLot()));
-                traderSell.setBalance(traderSell.getBalance().add(sell.getLot().multiply(sell.getPrice())));
-                traderSell.setCost(traderSell.getTotalAmount().divide(traderSell.getHaveLot()));
-                traderRepository.save(traderSell);
-                deleteShareOrderId.add(sell.getShareOrderId());
+            if (sell.getLot().compareTo(buy.getLot()) < 0){
+                //yarısı satılan orderlar için çare düşün
+                this.swapProcess(sell, buy);
 
-                Trader traderBuy = traderRepository.findById(buy.getTrader().getTraderId()).get();
-                traderBuy.setTotalAmount(traderBuy.getTotalAmount().add(buy.getLot().multiply(buy.getPrice())));
-                traderBuy.setHaveLot(traderBuy.getHaveLot().add(buy.getLot()));
-                traderBuy.setBalance(traderBuy.getBalance().subtract(buy.getLot().multiply(buy.getPrice())));
-                traderBuy.setCost(traderBuy.getTotalAmount().divide(traderBuy.getHaveLot()));
-                traderRepository.save(traderBuy);
-                deleteShareOrderId.add(buy.getShareOrderId());
-                sellShareOrderQueue.take();
-                buyShareOrderQueue.take();
-                continue;
-            }
-
-            if (sell.getLot().compareTo(buy.getPrice()) < 0){
-                Trader trader = traderRepository.findById(sell.getTrader().getTraderId()).get();
-                trader.setTotalAmount(trader.getTotalAmount().subtract(sell.getLot().multiply(trader.getCost())));
-                trader.setHaveLot(trader.getHaveLot().subtract(sell.getLot()));
-                trader.setBalance(trader.getBalance().add(sell.getLot().multiply(sell.getPrice())));
-                trader.setCost(trader.getTotalAmount().divide(trader.getHaveLot()));
-                traderRepository.save(trader);
                 buy.setLot(buy.getLot().subtract(sell.getLot()));
-                deleteShareOrderId.add(sell.getShareOrderId());
+                deleteShareOrderList.add(sell);
                 sellShareOrderQueue.take();
                 continue;
-            }else {
-                Trader trader = traderRepository.findById(buy.getTrader().getTraderId()).get();
-                trader.setTotalAmount(trader.getTotalAmount().add(buy.getLot().multiply(buy.getPrice())));
-                trader.setHaveLot(trader.getHaveLot().add(buy.getLot()));
-                trader.setBalance(trader.getBalance().subtract(buy.getLot().multiply(buy.getPrice())));
-                trader.setCost(trader.getTotalAmount().divide(trader.getHaveLot()));
-                traderRepository.save(trader);
+            }else if(sell.getLot().compareTo(buy.getLot()) > 0){
+                this.swapProcess(sell, buy);
+
                 sell.setLot(sell.getLot().subtract(buy.getLot()));
-                deleteShareOrderId.add(buy.getShareOrderId());
+                deleteShareOrderList.add(buy);
+                buyShareOrderQueue.take();
+            }else{
+                this.swapProcess(sell, buy);
+
+                deleteShareOrderList.add(sell);
+                deleteShareOrderList.add(buy);
+                sellShareOrderQueue.take();
                 buyShareOrderQueue.take();
             }
         }
-        shareOrderRepository.deleteAllByIdList(deleteShareOrderId);
+        if (!deleteShareOrderList.isEmpty()){
+            deleteShareOrderList.stream().forEach(shareOrder -> {
+                shareOrderRepository.delete(shareOrder);
+            });
+        }
         log.info("Açılış seansı sona erdi.");
+    }
 
+    private void swapProcess(ShareOrder sell, ShareOrder buy) {
+        this.sellProcessEnd(sell);
+        this.buyProcessEnd(buy);
+        log.info("Gerçekleşen işlem : Alan :{} - Satan :{}", buy.getTrader().getName(), sell.getTrader().getName());
+    }
 
+    public void buyProcessEnd(ShareOrder buy) {
+        Trader traderBuy = traderRepository.findById(buy.getTrader().getTraderId()).get();
+        traderBuy.setHaveLot(traderBuy.getHaveLot().add(buy.getLot()));
+        traderBuy.setCost(shareOrderUtil.costCalculate(traderBuy, buy));
+        traderRepository.save(traderBuy);
+    }
+
+    public void sellProcessEnd(ShareOrder sell) {
+        Trader traderSell = traderRepository.findById(sell.getTrader().getTraderId()).get();
+        traderSell.setBalance(traderSell.getBalance().add(sell.getLot().multiply(sell.getPrice())));
+        traderRepository.save(traderSell);
     }
 
     public void matchShareOrder() throws InterruptedException {
         Share share = shareRepository.findById(1L).get();
         traderRepository.getTraderListWantOnlyBuy(share.getCurrentSellPrice());
-    }
-
-    private ShareSummaryInfoTransport setOpenPriceShare(){
-        int difference;
-        Share share;
-        while (true){
-            share = shareRepository.findById(1L).get();
-            Map<String, BigDecimal> summaryInfoForMatchMap = this.findDifference(share);
-            if (!summaryInfoForMatchMap.containsKey("SELL") || !summaryInfoForMatchMap.containsKey("BUY")){
-                if (!summaryInfoForMatchMap.containsKey("SELL")){
-                    share.setCurrentSellPrice(share.getCurrentSellPrice().add(BigDecimal.valueOf(0.01)));
-                    share.setCurrentBuyPrice(share.getCurrentBuyPrice().add(BigDecimal.valueOf(0.01)));
-                    shareRepository.save(share);
-                }else {
-                    share.setCurrentSellPrice(share.getCurrentSellPrice().subtract(BigDecimal.valueOf(0.01)));
-                    share.setCurrentBuyPrice(share.getCurrentBuyPrice().subtract(BigDecimal.valueOf(0.01)));
-                    shareRepository.save(share);
-                }
-                if (share.getCurrentBuyPrice().compareTo(share.getMaxPrice()) == 0 || share.getCurrentSellPrice().compareTo(share.getMinPrice()) == 0){
-                    shareRepository.save(share);
-                    break;
-                }
-                continue;
-            }
-
-            if (summaryInfoForMatchMap.get("SELL").intValue() > summaryInfoForMatchMap.get("BUY").intValue()){
-                difference = summaryInfoForMatchMap.get("SELL").subtract(summaryInfoForMatchMap.get("BUY")).intValue();
-                share.setCurrentSellPrice(share.getCurrentSellPrice().subtract(BigDecimal.valueOf(0.01)));
-                share.setCurrentBuyPrice(share.getCurrentBuyPrice().subtract(BigDecimal.valueOf(0.01)));
-                shareRepository.save(share);
-                summaryInfoForMatchMap = this.findDifference(share);
-                if (this.keyControl(summaryInfoForMatchMap)){
-                    difference = summaryInfoForMatchMap.get("SELL").subtract(summaryInfoForMatchMap.get("BUY")).intValue();
-                }
-                if (difference < 0){
-                    share.setCurrentSellPrice(share.getCurrentSellPrice().add(BigDecimal.valueOf(0.01)));
-                    share.setCurrentBuyPrice(share.getCurrentBuyPrice().add(BigDecimal.valueOf(0.01)));
-                    shareRepository.save(share);
-                    break;
-                }
-            }else if (summaryInfoForMatchMap.get("SELL").intValue() == summaryInfoForMatchMap.get("BUY").intValue()){
-                shareRepository.save(share);
-                break;
-            }else {
-                difference = summaryInfoForMatchMap.get("SELL").subtract(summaryInfoForMatchMap.get("BUY")).intValue();
-                share.setCurrentSellPrice(share.getCurrentSellPrice().add(BigDecimal.valueOf(0.01)));
-                share.setCurrentBuyPrice(share.getCurrentBuyPrice().add(BigDecimal.valueOf(0.01)));
-                shareRepository.save(share);
-                summaryInfoForMatchMap = this.findDifference(share);
-                if (this.keyControl(summaryInfoForMatchMap)){
-                    difference = summaryInfoForMatchMap.get("SELL").subtract(summaryInfoForMatchMap.get("BUY")).intValue();
-                }
-                if (difference > 0){
-                    share.setCurrentSellPrice(share.getCurrentSellPrice().subtract(BigDecimal.valueOf(0.01)));
-                    share.setCurrentBuyPrice(share.getCurrentBuyPrice().subtract(BigDecimal.valueOf(0.01)));
-                    shareRepository.save(share);
-                    break;
-                }
-            }
-        }
-        ShareSummaryInfoTransport shareSummaryInfoTransport = new ShareSummaryInfoTransport();
-        shareSummaryInfoTransport.setCurrentBuyPrice(share.getCurrentBuyPrice());
-        shareSummaryInfoTransport.setCurrentSellPrice(share.getCurrentSellPrice());
-        log.info("Alış : {}, Satış : {}", shareSummaryInfoTransport.getCurrentBuyPrice(), shareSummaryInfoTransport.getCurrentSellPrice());
-        return shareSummaryInfoTransport;
-    }
-
-    private Map<String, BigDecimal> findDifference(Share share) {
-        List<ShareOrderSummaryInfoForMatchDTO> summaryInfoForMatchList = shareOrderRepository.getSummaryInfoForMatch(share.getCurrentSellPrice(), share.getCurrentBuyPrice());
-        return summaryInfoForMatchList.stream().collect(Collectors.toMap(ShareOrderSummaryInfoForMatchDTO::getShareOrderStatus, ShareOrderSummaryInfoForMatchDTO::getLot));
     }
 
     private boolean keyControl(Map<String, BigDecimal> summaryInfoForMatchMap){
@@ -177,4 +115,6 @@ public class StockMarketService {
         }
         return true;
     }
+
+
 }

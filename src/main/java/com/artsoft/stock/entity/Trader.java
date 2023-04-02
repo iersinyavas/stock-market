@@ -26,9 +26,9 @@ public class Trader implements Serializable {
     @Column(name = "total_cost")
     private BigDecimal cost;
 
-    @Column(name = "total_amount")
-    private BigDecimal totalAmount;
-
     @Column(name = "have_lot")
     private BigDecimal haveLot;
+
+    @Column(name = "current_have_lot")
+    private BigDecimal currentHaveLot;
 }

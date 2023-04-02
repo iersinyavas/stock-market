@@ -11,15 +11,18 @@ import java.util.List;
 @Repository
 public interface TraderRepository extends JpaRepository<Trader, Long> {
 
-    @Query(value = "select t.traderId from Trader t")
-    List<Long> getTraderListForOpenSession();
+    @Query(value = "select t.traderId from Trader t where t.haveLot > 0 and t.balance >= :price")
+    List<Long> getTraderListForOpenSession(BigDecimal price);
 
-    @Query(value = "select t from Trader t where t.haveLot > 0 and t.traderId in :traderIdList")
-    List<Trader> getTraderListByTraderId(List<Long> traderIdList);
+    @Query(value = "select t from Trader t where t.haveLot > 0 and t.balance >= :price and t.traderId in :traderIdList")
+    List<Trader> getTraderListByTraderId(List<Long> traderIdList, BigDecimal price);
 
     @Query(value = "select t.traderId from Trader t where t.haveLot > 0 and t.cost <= :currentSellPrice")
     List<Trader> getTraderListWantOnlyBuy(BigDecimal currentSellPrice);
 
     @Query(value = "select t from Trader t")
     List<Trader> getTraderListByBrokerageFirm(String brokerageFirm);
+
+    @Query(value = "select t.traderId from Trader t where t.haveLot > 0 and t.balance >= :price")
+    List<Long> getTraderList(BigDecimal price);
 }
