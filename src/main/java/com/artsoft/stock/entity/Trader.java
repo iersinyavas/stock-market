@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 
 @Data
 @Entity
+//@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "shareOrder"}) // İlişkili tablolarda json oluştururken iç içe sonsuz döngüye girmemesi için
 @Table(name = "trader", schema = "stock_market")
 public class Trader implements Serializable {
 

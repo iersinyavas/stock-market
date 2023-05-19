@@ -1,0 +1,82 @@
+#spring.mail.host=smtp.gmail.com
+#spring.mail.port=587
+#spring.mail.username=a
+#spring.mail.password=a
+
+# Other properties
+#spring.mail.properties.mail.smtp.auth=true
+#spring.mail.properties.mail.smtp.connectiontimeout=5000
+#spring.mail.properties.mail.smtp.timeout=5000
+#spring.mail.properties.mail.smtp.writetimeout=5000
+
+# TLS , port 587
+#spring.mail.properties.mail.smtp.starttls.enable=true
+
+# Enable multipart uploads
+#spring.servlet.multipart.enabled=true
+# Threshold after which files are written to disk.
+#spring.servlet.multipart.file-size-threshold=2KB
+# Max file size.
+#spring.servlet.multipart.max-file-size=200MB
+# Max Request Size
+#spring.servlet.multipart.max-request-size=215MB
+
+#spring.mvc.static-path-pattern=/static-content/**
+#spring.resources.static-locations=classpath:/public
+
+#spring.mail.host=smtp.gmail.com
+#spring.mail.port=587
+#spring.mail.username=iersinyavas@gmail.com
+#spring.mail.password=glwgfpypqzpwxuyh
+#spring.mail.properties.mail.smtp.auth=true
+#spring.mail.properties.mail.smtp.starttls.enable=true
+
+
+
+server:
+  port: 8090
+
+
+#spring.datasource.url=jdbc:postgresql://93.89.235.173:5432/business-management?ersin
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/postgres?stock_market
+    username: postgres
+    password: iersinyavas
+    driver-class: org.postgresql.Driver
+    connectionProperties: useUnicode=true;characterEncoding=utf-8;
+
+# The SQL dialect makes Hibernate generate better SQL for the chosen database
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: stock_market
+        jdbc:
+          lob:
+            non_contextual_creation: true
+        format_sql: true
+
+        # Hibernate ddl auto (create, create-drop, validate, update)
+    hibernate:
+      ddl-auto: update
+# Show or not log for each sql query
+    show-sql: true
+  main:
+    allow-bean-definition-overriding: true
+
+
+
+  batch:
+    job:
+      names:
+      enabled: false
+    initialize-schema: ALWAYS
+
+
+
+share:
+  shareId:
+
+
+

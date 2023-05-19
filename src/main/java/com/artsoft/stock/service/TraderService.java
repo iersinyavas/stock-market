@@ -11,8 +11,11 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @Slf4j
 @Service
@@ -35,14 +38,42 @@ public class TraderService {
         trader.setBalance(new BigDecimal(500));
 
         BigDecimal randomLot = RandomData.randomLot(share.getLot());
-        trader.setHaveLot(randomLot.compareTo(BigDecimal.valueOf(100L)) > 0 ? BigDecimal.valueOf(100L) : randomLot);
+        trader.setHaveLot(randomLot.compareTo(BigDecimal.valueOf(100L)) > 0 ? RandomData.randomLot(BigDecimal.valueOf(100)) : randomLot);
         trader.setCurrentHaveLot(trader.getHaveLot());
         trader.setCost(RandomData.randomShareOrderPrice(BigDecimal.ONE, BigDecimal.TEN));
 
         share.setLot(share.getLot().subtract(trader.getHaveLot()));
-        shareRepository.save(share);
-        traderRepository.save(trader);
         log.info("Trader adı : {}", trader.getName());
         return trader;
+    }
+
+    public BlockingQueue<Long> getTraderList(Share share) throws InterruptedException {
+        Random random = new Random();
+        List<Long> traderIdList = this.getAllTraderIdList(share.getPrice());
+
+        BlockingQueue<Long> traderIdQueue = new LinkedBlockingQueue<>(traderIdList);
+        List<Long> traderIdForShareOrder = new ArrayList<>();
+
+        while (traderIdQueue.size() != 0){
+            Long traderId = traderIdQueue.take();
+            if (random.nextInt(2) == 1){
+                traderIdForShareOrder.add(traderId);
+            }
+        }
+
+        traderIdList = traderRepository.getTraderListByTraderId(traderIdForShareOrder, share.getPrice());
+        return new LinkedBlockingQueue<>(traderIdList);
+    }
+
+    public List<Long> getAllTraderIdList(BigDecimal price){
+        return traderRepository.getTraderListForOpenSession(price);
+    }
+
+    public Trader getTrader(Long traderId){
+        return traderRepository.findById(traderId).get();
+    }
+
+    public void save(Trader trader){
+        traderRepository.save(trader);
     }
 }

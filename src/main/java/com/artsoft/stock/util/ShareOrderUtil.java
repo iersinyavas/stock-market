@@ -11,6 +11,8 @@ import java.math.RoundingMode;
 public class ShareOrderUtil {
 
     public BigDecimal costCalculate(Trader trader, ShareOrder shareOrder){
-        return trader.getCost().multiply(trader.getHaveLot()).add(shareOrder.getLot().multiply(shareOrder.getPrice())).divide(trader.getHaveLot().add(shareOrder.getLot()), 2, RoundingMode.FLOOR);
+        return trader.getCost().multiply(trader.getCurrentHaveLot())
+                .add(shareOrder.getLot().multiply(shareOrder.getPrice()))
+                .divide(trader.getCurrentHaveLot().add(shareOrder.getLot()), 2, RoundingMode.FLOOR);
     }
 }

@@ -14,8 +14,8 @@ public interface TraderRepository extends JpaRepository<Trader, Long> {
     @Query(value = "select t.traderId from Trader t where t.haveLot > 0 and t.balance >= :price")
     List<Long> getTraderListForOpenSession(BigDecimal price);
 
-    @Query(value = "select t from Trader t where t.haveLot > 0 and t.balance >= :price and t.traderId in :traderIdList")
-    List<Trader> getTraderListByTraderId(List<Long> traderIdList, BigDecimal price);
+    @Query(value = "select t.traderId from Trader t where t.haveLot > 0 and t.balance >= :price and t.traderId in :traderIdList")
+    List<Long> getTraderListByTraderId(List<Long> traderIdList, BigDecimal price);
 
     @Query(value = "select t.traderId from Trader t where t.haveLot > 0 and t.cost <= :currentSellPrice")
     List<Trader> getTraderListWantOnlyBuy(BigDecimal currentSellPrice);
@@ -25,4 +25,7 @@ public interface TraderRepository extends JpaRepository<Trader, Long> {
 
     @Query(value = "select t.traderId from Trader t where t.haveLot > 0 and t.balance >= :price")
     List<Long> getTraderList(BigDecimal price);
+
+    @Query(value = "update Trader t set t.currentHaveLot = t.currentHaveLot + :currentHaveLot where t.traderId = :traderId")
+    void updateTrader(BigDecimal currentHaveLot, Long traderId);
 }

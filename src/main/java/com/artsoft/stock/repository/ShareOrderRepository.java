@@ -22,6 +22,5 @@ public interface ShareOrderRepository extends JpaRepository<ShareOrder, Long> {
     @Query(value = "select s from ShareOrder s where s.price = :price and s.shareOrderType = 'LIMIT'")
     List<ShareOrder> getShareOrderListForSelectPrice(BigDecimal price);
 
-    @Query(value = "delete from ShareOrder s where s.shareOrderId in :idList")
-    void deleteAllByIdList(List<Long> idList);
+    void deleteByShareOrderId(Long shareOrderId);
 }

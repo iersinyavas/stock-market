@@ -1,120 +1,140 @@
 package com.artsoft.stock.service;
 
-import com.artsoft.stock.dto.ShareOrderSummaryInfoForMatchDTO;
 import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.entity.ShareOrder;
+import com.artsoft.stock.entity.SwapProcess;
 import com.artsoft.stock.entity.Trader;
 import com.artsoft.stock.repository.ShareOrderRepository;
 import com.artsoft.stock.repository.ShareRepository;
+import com.artsoft.stock.repository.SwapProcessRepository;
 import com.artsoft.stock.repository.TraderRepository;
+import com.artsoft.stock.util.BatchUtil;
+import com.artsoft.stock.util.GeneralEnumeration.*;
+import com.artsoft.stock.util.PriceStep;
 import com.artsoft.stock.util.ShareOrderUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class StockMarketService {
 
-    @Autowired
-    private TraderRepository traderRepository;
-    @Autowired
-    private ShareOrderRepository shareOrderRepository;
-    @Autowired
-    private ShareRepository shareRepository;
-    @Autowired
-    private ShareOrderUtil shareOrderUtil;
+    private final TraderRepository traderRepository;
+    private final ShareOrderRepository shareOrderRepository;
+    private final ShareOrderUtil shareOrderUtil;
+    private final SwapProcessRepository swapProcessRepository;
+    
 
-    public void matchShareOrderForOpenSession() throws InterruptedException {
-        List<ShareOrder> deleteShareOrderList = new ArrayList<>();
-        List<ShareOrderSummaryInfoForMatchDTO> processSell = shareOrderRepository.getSummaryInfoForSellMatch();
-        List<ShareOrderSummaryInfoForMatchDTO> processBuy = shareOrderRepository.getSummaryInfoForBuyMatch();
-
-        if (processBuy.get(0).getPrice().compareTo(processSell.get(0).getPrice()) != 0 && processBuy.get(0).getPrice().compareTo(processSell.get(1).getPrice()) != 0){
-            return;
-        }
-
-        List<ShareOrder> shareOrderListForOpenSession = shareOrderRepository.getShareOrderListForSelectPrice(processBuy.get(0).getPrice());
-        Map<String, List<ShareOrder>> sellOrBuyShareOrderMap = shareOrderListForOpenSession.stream().collect(Collectors.groupingBy(ShareOrder::getShareOrderStatus));
-        List<ShareOrder> sortedSellShareOrderList = sellOrBuyShareOrderMap.get("SELL").stream().sorted(Comparator.comparing(ShareOrder::getPrice)).collect(Collectors.toList());
-        List<ShareOrder> sortedBuyShareOrderList = sellOrBuyShareOrderMap.get("BUY").stream().sorted(Comparator.comparing(ShareOrder::getPrice).reversed()).collect(Collectors.toList());
-        BlockingQueue<ShareOrder> sellShareOrderQueue = new LinkedBlockingQueue<>(sortedSellShareOrderList);
-        BlockingQueue<ShareOrder> buyShareOrderQueue = new LinkedBlockingQueue<>(sortedBuyShareOrderList);
-
-        while(!sellShareOrderQueue.isEmpty() && !buyShareOrderQueue.isEmpty()){
-            ShareOrder sell = sellShareOrderQueue.peek();
-            ShareOrder buy = buyShareOrderQueue.peek();
-
-            if (sell.getLot().compareTo(buy.getLot()) < 0){
-                //yarısı satılan orderlar için çare düşün
-                this.swapProcess(sell, buy);
-
-                buy.setLot(buy.getLot().subtract(sell.getLot()));
-                deleteShareOrderList.add(sell);
-                sellShareOrderQueue.take();
-                continue;
-            }else if(sell.getLot().compareTo(buy.getLot()) > 0){
-                this.swapProcess(sell, buy);
-
-                sell.setLot(sell.getLot().subtract(buy.getLot()));
-                deleteShareOrderList.add(buy);
-                buyShareOrderQueue.take();
-            }else{
-                this.swapProcess(sell, buy);
-
-                deleteShareOrderList.add(sell);
-                deleteShareOrderList.add(buy);
-                sellShareOrderQueue.take();
-                buyShareOrderQueue.take();
+    public void sendShareOrderToStockMarket(Share share, ShareOrder shareOrder) throws InterruptedException {
+        if (shareOrder.getShareOrderType().equals(ShareOrderType.LIMIT.name())){
+            share.getPriceStep().getPrice(shareOrder).put(shareOrder);
+        }else {
+            if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY)){
+                PriceStep.marketBuyShareOrderQueue.put(shareOrder);
+            }else {
+                PriceStep.marketSellShareOrderQueue.put(shareOrder);
             }
         }
-        if (!deleteShareOrderList.isEmpty()){
-            deleteShareOrderList.stream().forEach(shareOrder -> {
-                shareOrderRepository.delete(shareOrder);
-            });
-        }
-        log.info("Açılış seansı sona erdi.");
     }
 
-    private void swapProcess(ShareOrder sell, ShareOrder buy) {
-        this.sellProcessEnd(sell);
-        this.buyProcessEnd(buy);
+    public void matchShareOrder(Share share) throws InterruptedException {
+
+        BlockingQueue<ShareOrder> limitSellShareOrderQueue = share.getPriceStep().getLimitSellShareOrderQueue();
+        BlockingQueue<ShareOrder> limitBuyShareOrderQueue = share.getPriceStep().getLimitBuyShareOrderQueue();
+
+        while(!limitSellShareOrderQueue.isEmpty() && !limitBuyShareOrderQueue.isEmpty()){
+            ShareOrder sell = limitSellShareOrderQueue.peek();
+            ShareOrder buy = limitBuyShareOrderQueue.peek();
+            SwapProcess swapProcess;
+            if (sell.getLot().compareTo(buy.getLot()) < 0){
+                swapProcess = new SwapProcess();
+                swapProcess.setVolume(sell.getVolume());
+                swapProcess.setPrice(sell.getPrice());
+                Trader traderSell = traderRepository.findById(sell.getTrader().getTraderId()).get();
+                traderSell.setCurrentHaveLot(traderSell.getCurrentHaveLot().subtract(sell.getLot()));
+
+                Trader traderBuy = traderRepository.findById(buy.getTrader().getTraderId()).get();
+                traderBuy.setCurrentHaveLot(traderBuy.getCurrentHaveLot().add(sell.getLot()));
+                traderBuy.setHaveLot(traderBuy.getHaveLot().add(sell.getLot()));
+                this.swapProcess(sell, buy, swapProcess, traderSell, traderBuy);
+
+                buy.setLot(buy.getLot().subtract(sell.getLot()));
+                buy.setVolume(buy.getVolume().subtract(swapProcess.getVolume()));
+                shareOrderRepository.delete(sell);
+                limitSellShareOrderQueue.take();
+            }else if(sell.getLot().compareTo(buy.getLot()) > 0){
+                swapProcess = new SwapProcess();
+                swapProcess.setVolume(buy.getVolume());
+                swapProcess.setPrice(buy.getPrice());
+                Trader traderSell = traderRepository.findById(sell.getTrader().getTraderId()).get();
+                traderSell.setCurrentHaveLot(traderSell.getCurrentHaveLot().subtract(buy.getLot()));
+
+                Trader traderBuy = traderRepository.findById(buy.getTrader().getTraderId()).get();
+                traderBuy.setCurrentHaveLot(traderBuy.getCurrentHaveLot().add(buy.getLot()));
+                traderBuy.setHaveLot(traderBuy.getHaveLot().add(buy.getLot()));
+                this.swapProcess(sell, buy, swapProcess, traderSell, traderBuy);
+
+                sell.setLot(sell.getLot().subtract(buy.getLot()));
+                sell.setVolume(sell.getVolume().subtract(swapProcess.getVolume()));
+                shareOrderRepository.delete(buy);
+                limitBuyShareOrderQueue.take();
+            }else{
+                swapProcess = new SwapProcess();
+                swapProcess.setVolume(sell.getVolume());
+                swapProcess.setPrice(sell.getPrice());
+                Trader traderSell = traderRepository.findById(sell.getTrader().getTraderId()).get();
+                traderSell.setCurrentHaveLot(traderSell.getCurrentHaveLot().subtract(sell.getLot()));
+
+                Trader traderBuy = traderRepository.findById(buy.getTrader().getTraderId()).get();
+                traderBuy.setCurrentHaveLot(traderBuy.getCurrentHaveLot().add(buy.getLot()));
+                traderBuy.setHaveLot(traderBuy.getHaveLot().add(buy.getLot()));
+                this.swapProcess(sell, buy, swapProcess, traderSell, traderBuy);
+
+                shareOrderRepository.delete(sell);
+                shareOrderRepository.delete(buy);
+                limitSellShareOrderQueue.take();
+                limitBuyShareOrderQueue.take();
+            }
+        }
+
+        this.setPrice(share, limitSellShareOrderQueue, limitBuyShareOrderQueue);
+    }
+
+    private void setPrice(Share share, BlockingQueue<ShareOrder> limitSellShareOrderQueue, BlockingQueue<ShareOrder> limitBuyShareOrderQueue) {
+        if (limitSellShareOrderQueue.isEmpty() && limitBuyShareOrderQueue.isEmpty()){
+
+        } else if (limitSellShareOrderQueue.isEmpty()){
+            share.setPriceStep(share.getPriceStep().priceUp(share.getPriceStep()));
+        } else {
+            share.setPriceStep(share.getPriceStep().priceDown(share.getPriceStep()));
+        }
+    }
+
+    private void swapProcess(ShareOrder sell, ShareOrder buy, SwapProcess swapProcess, Trader traderSell, Trader traderBuy) {
+        swapProcess.setBuyer(buy.getTrader().getName());
+        swapProcess.setSeller(sell.getTrader().getName());
+        swapProcess.setLot(sell.getLot());
+        swapProcess.setTransactionTime(LocalDateTime.now());
+        swapProcessRepository.save(swapProcess);
+
+        this.sellProcessEnd(sell, traderSell);
+        this.buyProcessEnd(buy, traderBuy);
         log.info("Gerçekleşen işlem : Alan :{} - Satan :{}", buy.getTrader().getName(), sell.getTrader().getName());
     }
 
-    public void buyProcessEnd(ShareOrder buy) {
-        Trader traderBuy = traderRepository.findById(buy.getTrader().getTraderId()).get();
-        traderBuy.setHaveLot(traderBuy.getHaveLot().add(buy.getLot()));
+    public void buyProcessEnd(ShareOrder buy, Trader traderBuy) {
         traderBuy.setCost(shareOrderUtil.costCalculate(traderBuy, buy));
         traderRepository.save(traderBuy);
     }
 
-    public void sellProcessEnd(ShareOrder sell) {
-        Trader traderSell = traderRepository.findById(sell.getTrader().getTraderId()).get();
+    public void sellProcessEnd(ShareOrder sell, Trader traderSell) {
         traderSell.setBalance(traderSell.getBalance().add(sell.getLot().multiply(sell.getPrice())));
         traderRepository.save(traderSell);
     }
-
-    public void matchShareOrder() throws InterruptedException {
-        Share share = shareRepository.findById(1L).get();
-        traderRepository.getTraderListWantOnlyBuy(share.getCurrentSellPrice());
-    }
-
-    private boolean keyControl(Map<String, BigDecimal> summaryInfoForMatchMap){
-        if (!summaryInfoForMatchMap.containsKey("SELL") || !summaryInfoForMatchMap.containsKey("BUY")){
-            return false;
-        }
-        return true;
-    }
-
-
 }

@@ -3,7 +3,8 @@ package com.artsoft.stock.batch;
 import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.repository.ShareRepository;
 import com.artsoft.stock.service.TraderService;
-import lombok.Data;
+import com.artsoft.stock.util.BatchUtil;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -11,6 +12,7 @@ import java.math.BigDecimal;
 import java.util.Random;
 
 @Component
+@RequiredArgsConstructor
 public class TreaderCreator extends Thread {
 
     @Autowired
@@ -19,10 +21,10 @@ public class TreaderCreator extends Thread {
     private ShareRepository shareRepository;
     @Autowired
     private ShareOrderCreator shareOrderCreator;
+    private final BatchUtil batchUtil;
 
     public Object lock = new Object();
     private Random random = new Random();
-    private Boolean isWork;
 
     @Override
     public void run() {
@@ -30,7 +32,7 @@ public class TreaderCreator extends Thread {
             while (true) {
                 try {
                     Thread.sleep(random.nextInt(10));
-                    Share share = shareRepository.findById(1L).get();
+                    Share share = shareRepository.findById(batchUtil.getShareId()).get();
                     if (share.getLot().compareTo(BigDecimal.ZERO) != 0){
                         traderService.createTrader(share);
                     }else {

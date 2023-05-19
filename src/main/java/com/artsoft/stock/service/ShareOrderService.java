@@ -6,12 +6,12 @@ import com.artsoft.stock.entity.Trader;
 import com.artsoft.stock.repository.ShareOrderRepository;
 import com.artsoft.stock.repository.ShareRepository;
 import com.artsoft.stock.repository.TraderRepository;
-import com.artsoft.stock.util.GeneralEnumeration;
 import com.artsoft.stock.util.GeneralEnumeration.*;
 import com.artsoft.stock.util.RandomData;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -25,59 +25,53 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 @Slf4j
 @Service
-public class ShareOrderService {
+@RequiredArgsConstructor
+public class ShareOrderService extends BaseService{
 
-    @Autowired
-    private TraderRepository traderRepository;
-    @Autowired
-    private ShareRepository shareRepository;
-    @Autowired
-    private ShareOrderRepository shareOrderRepository;
+    private final TraderRepository traderRepository;
+    private final ShareRepository shareRepository;
+    private final ShareOrderRepository shareOrderRepository;
+    private final StockMarketService stockMarketService;
 
-    public void createShareOrderForOpenSession() throws InterruptedException {
-        Random random = new Random();
-        Share share = shareRepository.findById(1L).get();
-        List<Long> traderIdList = traderRepository.getTraderListForOpenSession(share.getCurrentSellPrice());
+    @Transactional
+    public void createShareOrder(Share share, Long traderId) throws InterruptedException {
+        Thread.sleep(100);
+        Trader trader = traderRepository.findById(traderId).get();
+        ShareOrder shareOrder = new ShareOrder();
+        shareOrder.setTrader(trader);
+        shareOrder.setCreateTime(Timestamp.valueOf(LocalDateTime.now()));
+        shareOrder.setPrice(RandomData.randomShareOrderPrice(share.getMinPrice(), share.getMaxPrice()));
+        shareOrder.setShareOrderStatus(RandomData.shareOrderStatus().name());
 
-        BlockingQueue<Long> traderIdQueue = new LinkedBlockingQueue<>(traderIdList);
-        List<Long> traderIdForShareOrder = new ArrayList<>();
-
-        while (traderIdQueue.size() != 0){
-            Long traderId = traderIdQueue.take();
-            if (random.nextInt(2) == 1){
-                traderIdForShareOrder.add(traderId);
+        //Açılış seansı olduğu için
+        shareOrder.setShareOrderType(ShareOrderType.LIMIT.name()); //shareOrder.setShareOrderType(RandomData.shareOrderType().toString());
+        if (shareOrder.getPrice().compareTo(trader.getCost()) < 0 || (shareOrder.getPrice().compareTo(trader.getCost()) == 0 && shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY))){
+            if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) <= 0){
+                shareOrder.setPrice(share.getPriceStep().getPrice());
             }
-        }
-
-        List<Trader> traderList = traderRepository.getTraderListByTraderId(traderIdForShareOrder, share.getCurrentSellPrice());
-        BlockingQueue<Trader> traderQueue = new LinkedBlockingQueue<>(traderList);
-
-        while (traderQueue.size() != 0){
-            Trader trader = traderRepository.findById(traderQueue.take().getTraderId()).get();
-            ShareOrder shareOrder = new ShareOrder();
-            shareOrder.setTrader(trader);
-            shareOrder.setCreateTime(Timestamp.valueOf(LocalDateTime.now()));
-            shareOrder.setPrice(RandomData.randomShareOrderPrice(share.getMinPrice(), share.getMaxPrice()));
-
-            //Açılış seansı olduğu için
-            shareOrder.setShareOrderType("LIMIT"); //shareOrder.setShareOrderType(RandomData.shareOrderType().toString());
-            if (shareOrder.getPrice().compareTo(trader.getCost()) <= 0 || shareOrder.getPrice().compareTo(share.getCurrentSellPrice()) <= 0){
-                if ((shareOrder.getPrice().compareTo(trader.getCost()) >= 0 && shareOrder.getPrice().compareTo(share.getCurrentSellPrice()) < 0) || (shareOrder.getPrice().compareTo(trader.getCost()) <= 0 && shareOrder.getPrice().compareTo(share.getCurrentSellPrice()) >= 0)){
-                    shareOrder.setPrice(share.getCurrentBuyPrice());
+            this.processBuy(trader, shareOrder);
+        } else if (shareOrder.getPrice().compareTo(trader.getCost()) > 0 || shareOrder.getPrice().compareTo(trader.getCost()) == 0){
+            if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY)){
+                if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) <= 0){
+                    shareOrder.setPrice(share.getPriceStep().getPrice());
                 }
                 this.processBuy(trader, shareOrder);
-            } else{
-                shareOrder.setShareOrderStatus(RandomData.shareOrderStatus().toString());
-                if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY)){
-                    this.processBuy(trader, shareOrder);
-                }else {
-                    this.processSell(trader, shareOrder);
+            }else {
+                if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) >= 0){
+                    shareOrder.setPrice(share.getPriceStep().getPrice());
                 }
+                this.processSell(trader, shareOrder);
             }
-            traderRepository.save(trader);
-            shareOrderRepository.save(shareOrder);
-            log.info("Gönderilen Emir : {}", shareOrder);
         }
+
+        this.saveProcessEnity(share, trader, shareOrder);
+    }
+
+    private void saveProcessEnity(Share share, Trader trader, ShareOrder shareOrder) throws InterruptedException {
+        traderRepository.save(trader);
+        shareOrderRepository.save(shareOrder);
+        log.info("Gönderilen Emir : {}", shareOrder);
+        stockMarketService.sendShareOrderToStockMarket(share, shareOrder);
     }
 
     private void processSell(Trader trader, ShareOrder shareOrder) {
@@ -94,9 +88,7 @@ public class ShareOrderService {
         trader.setBalance(trader.getBalance().subtract(shareOrder.getVolume()));
     }
 
-    public void createShareOrder() throws InterruptedException {
-        Share share = shareRepository.findById(1L).get();
-        ShareOrder shareOrder = new ShareOrder();
-        shareOrder.setPrice(RandomData.randomShareOrderPrice(share.getMinPrice(), share.getCurrentSellPrice()));
+    public void delete(ShareOrder shareOrder){
+        shareOrderRepository.delete(shareOrder);
     }
 }

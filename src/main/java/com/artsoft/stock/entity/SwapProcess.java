@@ -5,6 +5,7 @@ import lombok.Data;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -31,4 +32,10 @@ public class SwapProcess implements Serializable {
 
     @Column(name = "volume")
     private BigDecimal volume;
+
+    @Column(name = "price")
+    private BigDecimal price;
+
+    @Column(name = "transaction_time")
+    private LocalDateTime transactionTime;
 }
