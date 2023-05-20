@@ -35,7 +35,7 @@ public class ShareOrderCreateOpenSessionTasklet implements Tasklet {
         share = shareService.init(share);
         BlockingQueue<Long> traderQueue = traderService.getTraderList(share);
         while (traderQueue.size() != 0){
-            shareOrderService.createShareOrder(share, traderQueue.take().longValue());
+            shareOrderService.createShareOrderOpenSession(share, traderQueue.take().longValue());
         }
 
         return RepeatStatus.FINISHED;

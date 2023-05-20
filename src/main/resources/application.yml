@@ -61,7 +61,7 @@ spring:
     hibernate:
       ddl-auto: update
 # Show or not log for each sql query
-    show-sql: true
+    show-sql: false
   main:
     allow-bean-definition-overriding: true
 

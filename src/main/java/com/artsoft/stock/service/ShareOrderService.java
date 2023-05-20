@@ -34,7 +34,7 @@ public class ShareOrderService extends BaseService{
     private final StockMarketService stockMarketService;
 
     @Transactional
-    public void createShareOrder(Share share, Long traderId) throws InterruptedException {
+    public void createShareOrderOpenSession(Share share, Long traderId) throws InterruptedException {
         Thread.sleep(100);
         Trader trader = traderRepository.findById(traderId).get();
         ShareOrder shareOrder = new ShareOrder();
@@ -64,10 +64,62 @@ public class ShareOrderService extends BaseService{
             }
         }
 
-        this.saveProcessEnity(share, trader, shareOrder);
+        this.saveProcessEntity(share, trader, shareOrder);
     }
 
-    private void saveProcessEnity(Share share, Trader trader, ShareOrder shareOrder) throws InterruptedException {
+    @Transactional
+    public void createShareOrder(Share share, Long traderId) throws InterruptedException {
+        Thread.sleep(1000);
+        Trader trader = traderRepository.findById(traderId).get();
+        ShareOrder shareOrder = new ShareOrder();
+        shareOrder.setTrader(trader);
+        shareOrder.setCreateTime(Timestamp.valueOf(LocalDateTime.now()));
+        shareOrder.setPrice(RandomData.randomShareOrderPrice(share.getMinPrice(), share.getMaxPrice()));
+        shareOrder.setShareOrderStatus(RandomData.shareOrderStatus().name());
+        shareOrder.setShareOrderType(ShareOrderType.LIMIT.name());
+        CONTROL:{
+            if (shareOrder.getPrice().compareTo(trader.getCost()) < 0 || (shareOrder.getPrice().compareTo(trader.getCost()) == 0 && shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY))){
+                if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) <= 0){
+                    shareOrder.setShareOrderType(RandomData.shareOrderType().name());
+                    if (shareOrder.getShareOrderType().equals(ShareOrderType.MARKET.name())){
+                        shareOrder.setPrice(null);
+                        shareOrder.setLot(RandomData.randomLot(trader.getBalance().divide(share.getPrice(), 2, RoundingMode.FLOOR)));
+                        break CONTROL;
+                    }
+                    shareOrder.setPrice(share.getPriceStep().getPrice());
+                }
+                this.processBuy(trader, shareOrder);
+            } else if (shareOrder.getPrice().compareTo(trader.getCost()) > 0 || shareOrder.getPrice().compareTo(trader.getCost()) == 0){
+                if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY.name())){
+                    if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) <= 0){
+                        shareOrder.setShareOrderType(RandomData.shareOrderType().name());
+                        if (shareOrder.getShareOrderType().equals(ShareOrderType.MARKET.name())){
+                            shareOrder.setPrice(null);
+                            shareOrder.setLot(RandomData.randomLot(trader.getBalance().divide(share.getPrice(), 2, RoundingMode.FLOOR)));
+                            break CONTROL;
+                        }
+                        shareOrder.setPrice(share.getPriceStep().getPrice());
+                    }
+                    this.processBuy(trader, shareOrder);
+                }else {
+                    if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) >= 0){
+                        shareOrder.setShareOrderType(RandomData.shareOrderType().name());
+                        if (shareOrder.getShareOrderType().equals(ShareOrderType.MARKET.name())){
+                            shareOrder.setPrice(null);
+                            shareOrder.setLot(RandomData.randomLot(trader.getHaveLot()));
+                            trader.setHaveLot(trader.getHaveLot().subtract(shareOrder.getLot()));
+                            break CONTROL;
+                        }
+                        shareOrder.setPrice(share.getPriceStep().getPrice());
+                    }
+                    this.processSell(trader, shareOrder);
+                }
+            }
+        }
+        this.saveProcessEntity(share, trader, shareOrder);
+    }
+
+    private void saveProcessEntity(Share share, Trader trader, ShareOrder shareOrder) throws InterruptedException {
         traderRepository.save(trader);
         shareOrderRepository.save(shareOrder);
         log.info("Gönderilen Emir : {}", shareOrder);

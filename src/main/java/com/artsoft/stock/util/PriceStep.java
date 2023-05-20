@@ -53,15 +53,21 @@ public class PriceStep {
     }
 
     public PriceStep priceUp(PriceStep priceStep){
+        if (priceStep.getPrice().compareTo(priceStep.getMaxPrice()) == 0){
+            return priceStep;
+        }
         if (priceStep.getPriceStepUp().getLimitSellShareOrderQueue().isEmpty()){
-            priceStep.priceUp(priceStep.getPriceStepUp());
+            return priceStep.priceUp(priceStep.getPriceStepUp());
         }
         return priceStep.getPriceStepUp();
     }
 
     public PriceStep priceDown(PriceStep priceStep){
+        if (priceStep.getPrice().compareTo(priceStep.getMinPrice()) == 0){
+            return priceStep;
+        }
         if (priceStep.getPriceStepDown().getLimitBuyShareOrderQueue().isEmpty()){
-            priceStep.priceDown(priceStep.getPriceStepDown());
+            return priceStep.priceDown(priceStep.getPriceStepDown());
         }
         return priceStep.getPriceStepDown();
     }
