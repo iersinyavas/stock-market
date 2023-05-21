@@ -81,6 +81,7 @@ public class ShareOrderService extends BaseService{
             if (shareOrder.getPrice().compareTo(trader.getCost()) < 0 || (shareOrder.getPrice().compareTo(trader.getCost()) == 0 && shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY))){
                 if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) <= 0){
                     shareOrder.setShareOrderType(RandomData.shareOrderType().name());
+                    shareOrder.setShareOrderStatus(ShareOrderStatus.BUY.name());
                     if (shareOrder.getShareOrderType().equals(ShareOrderType.MARKET.name())){
                         shareOrder.setPrice(null);
                         shareOrder.setLot(RandomData.randomLot(trader.getBalance().divide(share.getPrice(), 2, RoundingMode.FLOOR)));
@@ -101,9 +102,10 @@ public class ShareOrderService extends BaseService{
                         shareOrder.setPrice(share.getPriceStep().getPrice());
                     }
                     this.processBuy(trader, shareOrder);
-                }else {
+                }else { //SELL
                     if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) >= 0){
                         shareOrder.setShareOrderType(RandomData.shareOrderType().name());
+                        shareOrder.setShareOrderStatus(ShareOrderStatus.SELL.name());
                         if (shareOrder.getShareOrderType().equals(ShareOrderType.MARKET.name())){
                             shareOrder.setPrice(null);
                             shareOrder.setLot(RandomData.randomLot(trader.getHaveLot()));

@@ -46,7 +46,7 @@ public class StockMarketController {
         return ResponseEntity.ok(new BaseResponse<>(Boolean.TRUE));
     }
 
-    //@Scheduled(cron = "*/3 * * * * *")
+    //@Scheduled(cron = "* */3 * * * *")
     @GetMapping(value = "/stop-stock-market", produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<BaseResponse<Boolean>> launchStockMarketStop() throws JobParametersInvalidException, JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException {
         StockMarketRequest stockMarketRequest = new StockMarketRequest();

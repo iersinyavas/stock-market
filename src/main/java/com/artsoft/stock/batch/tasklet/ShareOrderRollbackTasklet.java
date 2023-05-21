@@ -27,6 +27,7 @@ public class ShareOrderRollbackTasklet implements Tasklet {
 
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws InterruptedException {
+        Thread.sleep(5000);
         Share share = batchUtil.getShare();
         share.setPrice(share.getPriceStep().getPrice());
         share.setPriceStep(share.getPriceStep().getMaxPrice(share.getPriceStep()));

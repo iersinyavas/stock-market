@@ -31,6 +31,7 @@ public class TreaderCreateTasklet implements Tasklet {
 
         List<Trader> traderList = new ArrayList<>();
         Share share = batchUtil.getShare();
+        share.setCurrentLot(share.getCurrentLot().add(share.getLot()));
         while (share.getLot().compareTo(BigDecimal.ZERO) > 0){
             traderList.add(traderService.createTrader(share));
         }

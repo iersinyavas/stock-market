@@ -99,7 +99,7 @@ public class StockMarketService {
                     limitBuyShareOrderQueue = share.getPriceStep().getLimitBuyShareOrderQueue();
                     ShareOrder buy = limitBuyShareOrderQueue.peek();
                     if (Objects.isNull(buy)){
-                        Trader trader = traderRepository.findById(shareOrder.getTrader().getTraderId()).get();
+                        Trader trader = traderRepository.findById(shareOrder.getTrader().getTraderId()).get();                    //TODO Tabloda current_have_lot neden - oluyor bak
                         trader.setHaveLot(trader.getHaveLot().add(shareOrder.getLot()));
                         traderRepository.save(trader);
                         shareOrderQueue.take();
@@ -155,10 +155,12 @@ public class StockMarketService {
         swapProcess.setLot(sell.getLot());       //buy da olurdu farketmez eşitler yani
         Trader traderSell = traderRepository.findById(sell.getTrader().getTraderId()).get();
         traderSell.setCurrentHaveLot(traderSell.getCurrentHaveLot().subtract(sell.getLot()));
+        traderRepository.save(traderSell);
 
         Trader traderBuy = traderRepository.findById(buy.getTrader().getTraderId()).get();
         traderBuy.setCurrentHaveLot(traderBuy.getCurrentHaveLot().add(buy.getLot()));
         traderBuy.setHaveLot(traderBuy.getHaveLot().add(buy.getLot()));
+        traderRepository.save(traderBuy);
         this.swapProcess(sell, buy, swapProcess, traderSell, traderBuy);
 
         sell.setLot(BigDecimal.ZERO);
@@ -175,10 +177,12 @@ public class StockMarketService {
         swapProcess.setLot(buy.getLot());
         Trader traderSell = traderRepository.findById(sell.getTrader().getTraderId()).get();
         traderSell.setCurrentHaveLot(traderSell.getCurrentHaveLot().subtract(buy.getLot()));
+        traderRepository.save(traderSell);
 
         Trader traderBuy = traderRepository.findById(buy.getTrader().getTraderId()).get();
         traderBuy.setCurrentHaveLot(traderBuy.getCurrentHaveLot().add(buy.getLot()));
         traderBuy.setHaveLot(traderBuy.getHaveLot().add(buy.getLot()));
+        traderRepository.save(traderBuy);
         this.swapProcess(sell, buy, swapProcess, traderSell, traderBuy);
 
         sell.setLot(sell.getLot().subtract(buy.getLot()));
@@ -194,10 +198,12 @@ public class StockMarketService {
         swapProcess.setLot(sell.getLot());
         Trader traderSell = traderRepository.findById(sell.getTrader().getTraderId()).get();
         traderSell.setCurrentHaveLot(traderSell.getCurrentHaveLot().subtract(sell.getLot()));
+        traderRepository.save(traderSell);
 
         Trader traderBuy = traderRepository.findById(buy.getTrader().getTraderId()).get();
         traderBuy.setCurrentHaveLot(traderBuy.getCurrentHaveLot().add(sell.getLot()));
         traderBuy.setHaveLot(traderBuy.getHaveLot().add(sell.getLot()));
+        traderRepository.save(traderBuy);
         this.swapProcess(sell, buy, swapProcess, traderSell, traderBuy);
 
         buy.setLot(buy.getLot().subtract(sell.getLot()));

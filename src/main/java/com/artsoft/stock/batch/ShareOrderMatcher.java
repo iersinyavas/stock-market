@@ -6,6 +6,9 @@ import com.artsoft.stock.util.BatchUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import java.util.Random;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Component
 @RequiredArgsConstructor
@@ -14,6 +17,9 @@ public class ShareOrderMatcher extends Thread {
     private final StockMarketService stockMarketService;
     private final BatchUtil batchUtil;
 
+    /*private Lock lock = new ReentrantLock();
+    private Condition condition = lock.newCondition();*/
+
     public Object lock = new Object();
     private Random random = new Random();
 
@@ -21,10 +27,11 @@ public class ShareOrderMatcher extends Thread {
     public void run() {
         try {
             synchronized (lock) {
+                this.lock();
                 while (true){
-                    this.lock();
                     Share share = batchUtil.getShare();
                     stockMarketService.matchShareOrder(share);
+                    this.lock();
                 }
             }
         } catch (InterruptedException e) {

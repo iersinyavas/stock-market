@@ -25,6 +25,9 @@ public class Share implements Serializable {
     @Column(name = "lot")
     private BigDecimal lot;
 
+    @Column(name = "current_lot")
+    private BigDecimal currentLot;
+
     @Column(name = "price")
     private BigDecimal price;
 
