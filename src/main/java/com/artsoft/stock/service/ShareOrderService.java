@@ -3,9 +3,12 @@ package com.artsoft.stock.service;
 import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.entity.ShareOrder;
 import com.artsoft.stock.entity.Trader;
+import com.artsoft.stock.exception.InsufficientBalanceException;
+import com.artsoft.stock.exception.InsufficientLotException;
 import com.artsoft.stock.repository.ShareOrderRepository;
 import com.artsoft.stock.repository.ShareRepository;
 import com.artsoft.stock.repository.TraderRepository;
+import com.artsoft.stock.request.ShareOrderRequest;
 import com.artsoft.stock.util.GeneralEnumeration.*;
 import com.artsoft.stock.util.RandomData;
 import lombok.RequiredArgsConstructor;
@@ -71,6 +74,7 @@ public class ShareOrderService extends BaseService{
     public void createShareOrder(Share share, Long traderId) throws InterruptedException {
         Thread.sleep(1000);
         Trader trader = traderRepository.findById(traderId).get();
+
         ShareOrder shareOrder = new ShareOrder();
         shareOrder.setTrader(trader);
         shareOrder.setCreateTime(Timestamp.valueOf(LocalDateTime.now()));
@@ -103,6 +107,9 @@ public class ShareOrderService extends BaseService{
                     }
                     this.processBuy(trader, shareOrder);
                 }else { //SELL
+                    if (trader.getHaveLot().compareTo(BigDecimal.ZERO) == 0){
+                        return;
+                    }
                     if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) >= 0){
                         shareOrder.setShareOrderType(RandomData.shareOrderType().name());
                         shareOrder.setShareOrderStatus(ShareOrderStatus.SELL.name());
@@ -121,10 +128,33 @@ public class ShareOrderService extends BaseService{
         this.saveProcessEntity(share, trader, shareOrder);
     }
 
+    @Transactional
+    public ShareOrder createShareOrder(ShareOrderRequest shareOrderRequest) throws InsufficientLotException, InsufficientBalanceException {
+        ShareOrder shareOrder = new ShareOrder();
+        Trader trader = traderRepository.findById(shareOrderRequest.getTraderId()).get();
+        if (shareOrderRequest.getShareOrderStatus().equals(ShareOrderStatus.SELL.name()) && trader.getCurrentHaveLot().compareTo(shareOrderRequest.getLot()) < 0){
+            log.info("Yetersiz lot...");
+            throw new InsufficientLotException();
+        }
+        shareOrder.setTrader(trader);
+        shareOrder.setPrice(shareOrderRequest.getPrice());
+        shareOrder.setLot(shareOrderRequest.getLot());
+        shareOrder.setVolume(shareOrder.getPrice().multiply(shareOrder.getLot()));
+        if (shareOrderRequest.getShareOrderStatus().equals(ShareOrderStatus.BUY) &&
+                shareOrderRequest.getShareOrderType().equals(ShareOrderType.LIMIT.name()) &&
+                trader.getBalance().compareTo(shareOrder.getVolume()) < 0){
+            throw new InsufficientBalanceException();
+        }
+        shareOrder.setShareOrderStatus(shareOrderRequest.getShareOrderStatus());
+        shareOrder.setShareOrderType(shareOrderRequest.getShareOrderType());
+        shareOrder.setCreateTime(Timestamp.valueOf(LocalDateTime.now()));
+
+        return shareOrderRepository.save(shareOrder);
+    }
+
     private void saveProcessEntity(Share share, Trader trader, ShareOrder shareOrder) throws InterruptedException {
         traderRepository.save(trader);
         shareOrderRepository.save(shareOrder);
-        log.info("Gönderilen Emir : {}", shareOrder);
         stockMarketService.sendShareOrderToStockMarket(share, shareOrder);
     }
 

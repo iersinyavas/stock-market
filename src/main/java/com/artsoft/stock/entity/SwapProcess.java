@@ -30,6 +30,9 @@ public class SwapProcess implements Serializable {
     @Column(name = "share_order_status")
     private String shareOrderStatus;
 
+    @Column(name = "share_order_type")
+    private String shareOrderType;
+
     @Column(name = "volume")
     private BigDecimal volume;
 

@@ -4,7 +4,10 @@ import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.entity.Trader;
 import com.artsoft.stock.repository.ShareRepository;
 import com.artsoft.stock.repository.TraderRepository;
+import com.artsoft.stock.request.TraderRequest;
+import com.artsoft.stock.util.BatchUtil;
 import com.artsoft.stock.util.RandomData;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,15 +22,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class TraderService {
 
-    @Autowired
-    private TraderRepository traderRepository;
-    @Autowired
-    private ShareRepository shareRepository;
+    private final TraderRepository traderRepository;
+    private final ShareRepository shareRepository;
+    private final BatchUtil batchUtil;
+
+    Random random = new Random();
 
     public Trader createTrader(Share share){
-        Random random = new Random();
         String[] name = {"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","R","S","T","U","V","Y","Z","X","Q","W"};
         Trader trader = new Trader();
         StringBuilder nameBuilder = new StringBuilder();
@@ -35,19 +39,39 @@ public class TraderService {
             nameBuilder.append(name[random.nextInt(name.length)]);
         }
         trader.setName(nameBuilder.toString());
-        trader.setBalance(new BigDecimal(500));
+        trader.setBalance(new BigDecimal(100));
 
         BigDecimal randomLot = RandomData.randomLot(share.getLot());
         trader.setHaveLot(randomLot.compareTo(BigDecimal.valueOf(100L)) > 0 ? RandomData.randomLot(BigDecimal.valueOf(100)) : randomLot);
         trader.setCurrentHaveLot(trader.getHaveLot());
-        trader.setCost(RandomData.randomShareOrderPrice(BigDecimal.ONE, BigDecimal.TEN));
+        trader.setCost(RandomData.randomShareOrderPrice(BigDecimal.ONE, BigDecimal.valueOf(3)));
+        trader.setCostAmount(trader.getCost().multiply(trader.getCurrentHaveLot()));
 
         share.setLot(share.getLot().subtract(trader.getHaveLot()));
         log.info("Trader adı : {}", trader.getName());
         return trader;
     }
 
-    public BlockingQueue<Long> getTraderList(Share share) throws InterruptedException {
+    public Trader createNewTrader(Share share){
+        String[] name = {"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","R","S","T","U","V","Y","Z","X","Q","W"};
+        Trader trader = new Trader();
+        StringBuilder nameBuilder = new StringBuilder();
+        for (int i=0; i<random.nextInt(10)+1; i++){
+            nameBuilder.append(name[random.nextInt(name.length)]);
+        }
+        trader.setName(nameBuilder.toString());
+        trader.setBalance(new BigDecimal(random.nextInt(491)+10));
+
+        trader.setHaveLot(BigDecimal.ZERO);
+        trader.setCurrentHaveLot(BigDecimal.ZERO);
+        trader.setCost(share.getPriceStep().getPrice());
+        trader.setCostAmount(BigDecimal.ZERO);
+
+        log.info("Trader adı : {}", trader.getName());
+        return trader;
+    }
+
+    public BlockingQueue<Long> getTraderQueue(Share share) throws InterruptedException {
         Random random = new Random();
         List<Long> traderIdList = this.getAllTraderIdList(share.getPrice());
 
@@ -61,19 +85,43 @@ public class TraderService {
             }
         }
 
-        traderIdList = traderRepository.getTraderListByTraderId(traderIdForShareOrder, share.getPrice());
+        traderIdList = traderRepository.getTraderListByTraderId(traderIdForShareOrder, batchUtil.getTraderId(), share.getPrice());
         return new LinkedBlockingQueue<>(traderIdList);
     }
 
+    public List<Long> getTraderList(Share share) throws InterruptedException {
+        List<Long> traderIdList = this.getAllTraderIdList(share.getPrice());
+
+        BlockingQueue<Long> traderIdQueue = new LinkedBlockingQueue<>(traderIdList);
+        List<Long> traderIdForShareOrder = new ArrayList<>();
+
+        while (traderIdQueue.size() != 0){
+            Long traderId = traderIdQueue.take();
+            if (random.nextInt(2) == 1){
+                traderIdForShareOrder.add(traderId);
+            }
+        }
+
+        return traderRepository.getTraderListByTraderId(traderIdForShareOrder, batchUtil.getTraderId(), share.getPrice());
+    }
+
     public List<Long> getAllTraderIdList(BigDecimal price){
-        return traderRepository.getTraderListForOpenSession(price);
+        return traderRepository.getTraderListForOpenSession(price, batchUtil.getTraderId());
     }
 
     public Trader getTrader(Long traderId){
         return traderRepository.findById(traderId).get();
     }
 
-    public void save(Trader trader){
-        traderRepository.save(trader);
+    public Trader save(Trader trader){
+        return traderRepository.save(trader);
+    }
+
+    public List<Trader> getTraderListByCurrentHaveLotEqualsZero(){
+        return traderRepository.getTraderListByCurrentHaveLotEqualsZero(batchUtil.getTraderId());
+    }
+
+    public void deleteTrader(Trader trader){
+        traderRepository.delete(trader);
     }
 }

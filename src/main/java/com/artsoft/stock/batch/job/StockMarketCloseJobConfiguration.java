@@ -26,6 +26,7 @@ public class StockMarketCloseJobConfiguration extends BaseBatchConfiguration {
     private final ShareOrderThreadStopStep shareOrderThreadStopStep;
     private final UpdateSharePriceStep updateSharePriceStep;
     private final ShareOrderRollbackStep shareOrderRollbackStep;
+    private final DeleteTraderStep deleteTraderStep;
 
     @Override
     @Bean(name= StockMarketConstant.STOCK_MARKET_CLOSE)
@@ -35,6 +36,7 @@ public class StockMarketCloseJobConfiguration extends BaseBatchConfiguration {
         stepList.add(shareOrderThreadStopStep.jobStep());
         stepList.add(shareOrderRollbackStep.jobStep());
         stepList.add(updateSharePriceStep.jobStep());
+        //stepList.add(deleteTraderStep.jobStep());
         SimpleJobBuilder simpleJobBuilder = super.createSimpleJobBuilder(StockMarketConstant.STOCK_MARKET_CLOSE, stepList);
         return simpleJobBuilder.listener(new StockMarketJobListener(this.initContext())).build();
     }

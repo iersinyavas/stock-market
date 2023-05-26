@@ -27,36 +27,40 @@ public class ShareOrderRollbackTasklet implements Tasklet {
 
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws InterruptedException {
-        Thread.sleep(5000);
-        Share share = batchUtil.getShare();
-        share.setPrice(share.getPriceStep().getPrice());
-        share.setPriceStep(share.getPriceStep().getMaxPrice(share.getPriceStep()));
-        Trader trader;
-        while (true){
-            while (this.isEmpty(share.getPriceStep())){
-                share.setPriceStep(share.getPriceStep().getPriceStepDown());
-            }
-            BlockingQueue<ShareOrder> buyShareOrderQueue = share.getPriceStep().getLimitBuyShareOrderQueue();
-            while (!buyShareOrderQueue.isEmpty()) {
-                ShareOrder shareOrder = buyShareOrderQueue.take();
-                trader = traderService.getTrader(shareOrder.getTrader().getTraderId());
-                trader.setBalance(trader.getBalance().add(shareOrder.getVolume()));
-                traderService.save(trader);
-                shareOrderService.delete(shareOrder);
-            }
+        try {
+            Thread.sleep(5000);
+            Share share = batchUtil.getShare();
+            share.setPrice(share.getPriceStep().getPrice());
+            share.setPriceStep(share.getPriceStep().getMaxPrice(share.getPriceStep()));
+            Trader trader;
+            while (true){
+                while (this.isEmpty(share.getPriceStep())){
+                    share.setPriceStep(share.getPriceStep().getPriceStepDown());
+                }
+                BlockingQueue<ShareOrder> buyShareOrderQueue = share.getPriceStep().getLimitBuyShareOrderQueue();
+                while (!buyShareOrderQueue.isEmpty()) {
+                    ShareOrder shareOrder = buyShareOrderQueue.take();
+                    trader = traderService.getTrader(shareOrder.getTrader().getTraderId());
+                    trader.setBalance(trader.getBalance().add(shareOrder.getVolume()));
+                    traderService.save(trader);
+                    shareOrderService.delete(shareOrder);
+                }
 
-            BlockingQueue<ShareOrder> sellShareOrderQueue = share.getPriceStep().getLimitSellShareOrderQueue();
-            while (!sellShareOrderQueue.isEmpty()){
-                ShareOrder shareOrder = sellShareOrderQueue.take();
-                trader = traderService.getTrader(shareOrder.getTrader().getTraderId());
-                trader.setHaveLot(trader.getHaveLot().add(shareOrder.getLot()));
-                traderService.save(trader);
-                shareOrderService.delete(shareOrder);
-            }
+                BlockingQueue<ShareOrder> sellShareOrderQueue = share.getPriceStep().getLimitSellShareOrderQueue();
+                while (!sellShareOrderQueue.isEmpty()){
+                    ShareOrder shareOrder = sellShareOrderQueue.take();
+                    trader = traderService.getTrader(shareOrder.getTrader().getTraderId());
+                    trader.setHaveLot(trader.getHaveLot().add(shareOrder.getLot()));
+                    traderService.save(trader);
+                    shareOrderService.delete(shareOrder);
+                }
 
-            if (Objects.isNull(share.getPriceStep().getPriceStepDown())){
-                break;
+                if (Objects.isNull(share.getPriceStep().getPriceStepDown())){
+                    break;
+                }
             }
+        }catch (InterruptedException | NullPointerException e){
+            return RepeatStatus.FINISHED;
         }
 
         return RepeatStatus.FINISHED;

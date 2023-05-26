@@ -22,8 +22,7 @@ public class PriceStep {
     private BigDecimal maxPrice;
     private BlockingQueue<ShareOrder> limitBuyShareOrderQueue = new LinkedBlockingQueue();
     private BlockingQueue<ShareOrder> limitSellShareOrderQueue = new LinkedBlockingQueue();
-    public static BlockingQueue<ShareOrder> marketBuyShareOrderQueue = new LinkedBlockingQueue();
-    public static BlockingQueue<ShareOrder> marketSellShareOrderQueue = new LinkedBlockingQueue();
+    public static BlockingQueue<ShareOrder> marketShareOrderQueue = new LinkedBlockingQueue();
 
     private PriceStep priceStepUp;
     private PriceStep priceStepDown;

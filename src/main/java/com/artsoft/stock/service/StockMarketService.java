@@ -4,6 +4,7 @@ import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.entity.ShareOrder;
 import com.artsoft.stock.entity.SwapProcess;
 import com.artsoft.stock.entity.Trader;
+import com.artsoft.stock.exception.InsufficientBalanceException;
 import com.artsoft.stock.repository.ShareOrderRepository;
 import com.artsoft.stock.repository.ShareRepository;
 import com.artsoft.stock.repository.SwapProcessRepository;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
@@ -37,34 +39,31 @@ public class StockMarketService {
         if (shareOrder.getShareOrderType().equals(ShareOrderType.LIMIT.name())){
             share.getPriceStep().getPrice(shareOrder).put(shareOrder);
         }else {
-            if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY.name())){
-                PriceStep.marketBuyShareOrderQueue.put(shareOrder);
-            }else {
-                PriceStep.marketSellShareOrderQueue.put(shareOrder);
-            }
+            PriceStep.marketShareOrderQueue.put(shareOrder);
         }
+        log.info("Gönderilen Emir : {}", shareOrder);
     }
 
-    private BlockingQueue<ShareOrder> whichShareOrderQueueNotEmpty(BlockingQueue<ShareOrder> sellShareOrderQueue, BlockingQueue<ShareOrder> buyShareOrderQueue){
-        if (!sellShareOrderQueue.isEmpty()){
-            return sellShareOrderQueue;
-        }
-
-        if (!buyShareOrderQueue.isEmpty()){
-            return buyShareOrderQueue;
+    private BlockingQueue<ShareOrder> shareOrderQueueIsEmpty(BlockingQueue<ShareOrder> shareOrderQueue){
+        if (!shareOrderQueue.isEmpty()){
+            return shareOrderQueue;
         }
         return null;
     }
 
-    public void matchShareOrder(Share share) throws InterruptedException {
+    public void matchShareOrder(Share share) throws InterruptedException, InsufficientBalanceException {
 
         BlockingQueue<ShareOrder> limitSellShareOrderQueue = share.getPriceStep().getLimitSellShareOrderQueue();
         BlockingQueue<ShareOrder> limitBuyShareOrderQueue = share.getPriceStep().getLimitBuyShareOrderQueue();
 
-        BlockingQueue<ShareOrder> shareOrderQueue = this.whichShareOrderQueueNotEmpty(PriceStep.marketSellShareOrderQueue, PriceStep.marketBuyShareOrderQueue);
+        BlockingQueue<ShareOrder> shareOrderQueue = this.shareOrderQueueIsEmpty(PriceStep.marketShareOrderQueue);
         if (Objects.nonNull(shareOrderQueue)){
             ShareOrder shareOrder = shareOrderQueue.peek();
             if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY.name())){
+                Trader trader = traderRepository.findById(shareOrder.getTrader().getTraderId()).get();
+                if (trader.getBalance().compareTo(share.getPriceStep().getPrice()) < 0){
+                    throw new InsufficientBalanceException();
+                }
                 while (shareOrder.getLot().compareTo(BigDecimal.ZERO) > 0){
                     if (share.getPriceStep().getLimitSellShareOrderQueue().isEmpty()){
                         share.setPriceStep(share.getPriceStep().priceUp(share.getPriceStep()));
@@ -73,20 +72,18 @@ public class StockMarketService {
                     limitSellShareOrderQueue = share.getPriceStep().getLimitSellShareOrderQueue();
                     ShareOrder sell = limitSellShareOrderQueue.peek();
                     if (Objects.isNull(sell)){
-                        shareOrderQueue.take();
-                        shareOrderRepository.delete(shareOrder);
+                        this.deleteShareOrder(shareOrderQueue, shareOrder);
                         return;
                     }
                     SwapProcess swapProcess = new SwapProcess();
                     swapProcess.setShareOrderStatus(ShareOrderStatus.BUY.name());
+                    swapProcess.setShareOrderType(shareOrder.getShareOrderType());
+                    this.balanceControl(shareOrder, sell);
                     if (sell.getLot().compareTo(shareOrder.getLot()) < 0){
-                        shareOrder.setVolume(shareOrder.getPrice().multiply(sell.getLot()));
                         this.ifBuyGreaterThanSell(limitSellShareOrderQueue, sell, shareOrder, swapProcess);
                     }else if(sell.getLot().compareTo(shareOrder.getLot()) > 0){
-                        shareOrder.setVolume(shareOrder.getPrice().multiply(shareOrder.getLot()));
                         this.ifSellGreaterThanBuy(shareOrderQueue, sell, shareOrder, swapProcess);
                     }else{
-                        shareOrder.setVolume(shareOrder.getPrice().multiply(shareOrder.getLot()));
                         this.ifSellEqualsBuy(limitSellShareOrderQueue, shareOrderQueue, sell, shareOrder, swapProcess);
                     }
                 }
@@ -99,15 +96,15 @@ public class StockMarketService {
                     limitBuyShareOrderQueue = share.getPriceStep().getLimitBuyShareOrderQueue();
                     ShareOrder buy = limitBuyShareOrderQueue.peek();
                     if (Objects.isNull(buy)){
-                        Trader trader = traderRepository.findById(shareOrder.getTrader().getTraderId()).get();                    //TODO Tabloda current_have_lot neden - oluyor bak
+                        Trader trader = traderRepository.findById(shareOrder.getTrader().getTraderId()).get();
                         trader.setHaveLot(trader.getHaveLot().add(shareOrder.getLot()));
                         traderRepository.save(trader);
-                        shareOrderQueue.take();
-                        shareOrderRepository.delete(shareOrder);
+                        this.deleteShareOrder(shareOrderQueue, shareOrder);
                         return;
                     }
                     SwapProcess swapProcess = new SwapProcess();
                     swapProcess.setShareOrderStatus(ShareOrderStatus.SELL.name());
+                    swapProcess.setShareOrderType(shareOrder.getShareOrderType());
                     if (shareOrder.getLot().compareTo(buy.getLot()) < 0){
                         shareOrder.setVolume(shareOrder.getPrice().multiply(shareOrder.getLot()));
                         this.ifBuyGreaterThanSell(shareOrderQueue, shareOrder, buy, swapProcess);
@@ -137,6 +134,25 @@ public class StockMarketService {
         }
 
         this.setPrice(share, limitSellShareOrderQueue, limitBuyShareOrderQueue);
+    }
+
+    private void deleteShareOrder(BlockingQueue<ShareOrder> shareOrderQueue, ShareOrder shareOrder) throws InterruptedException {
+        shareOrderQueue.take();
+        shareOrderRepository.delete(shareOrder);
+    }
+
+    private void balanceControl(ShareOrder buy, ShareOrder sell) throws InsufficientBalanceException {//Kuyruktan geldiği için buy ===> shareOrder oldu
+        Trader trader = traderRepository.findById(buy.getTrader().getTraderId()).get();
+        if (trader.getBalance().compareTo(BigDecimal.ZERO) == 0){
+            throw new InsufficientBalanceException();
+        }
+        BigDecimal divide = BigDecimal.valueOf(trader.getBalance().divide(sell.getPrice(), RoundingMode.FLOOR).longValue());
+        divide = divide.compareTo(buy.getLot()) > 0 ? buy.getLot() : divide;
+        buy.setVolume(buy.getPrice().multiply(divide));
+        if (divide.compareTo(sell.getLot()) <= 0){
+            buy.setLot(divide);
+            buy.setVolume(buy.getPrice().multiply(buy.getLot()));
+        }
     }
 
     private void setPrice(Share share, BlockingQueue<ShareOrder> limitSellShareOrderQueue, BlockingQueue<ShareOrder> limitBuyShareOrderQueue) {
@@ -228,12 +244,14 @@ public class StockMarketService {
         if (buy.getShareOrderType().equals(ShareOrderType.MARKET.name())){
             traderBuy.setBalance(traderBuy.getBalance().subtract(buy.getVolume()));
         }
-        traderBuy.setCost(shareOrderUtil.costCalculate(traderBuy, buy));
+        traderBuy.setCostAmount(traderBuy.getCostAmount().add(buy.getVolume()));
+        traderBuy.setCost(shareOrderUtil.costCalculate(traderBuy, buy)); //cost hesabını gözden geçir yanlış hesaplıyor
         traderRepository.save(traderBuy);
     }
 
     public void sellProcessEnd(ShareOrder sell, Trader traderSell) {
         traderSell.setBalance(traderSell.getBalance().add(sell.getVolume()));
+        //traderSell.setCostAmount(traderSell.getCostAmount().subtract(traderSell.getCost().multiply(sell.getLot())));
         traderRepository.save(traderSell);
     }
 }

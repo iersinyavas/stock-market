@@ -19,16 +19,14 @@ import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.ws.rs.core.MediaType;
 
 @RestController
-@RequestMapping("/trader")
+@RequestMapping("/stock-market")
 @RequiredArgsConstructor
+@CrossOrigin
 public class StockMarketController {
 
     private final BatchJobLauncher batchJobLauncher;

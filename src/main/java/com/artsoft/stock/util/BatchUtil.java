@@ -19,5 +19,8 @@ public class BatchUtil {
     @Value("${share.shareId}")
     private Long shareId;
 
+    @Value("${traderId}")
+    private Long traderId;
+
     private Share share;
 }

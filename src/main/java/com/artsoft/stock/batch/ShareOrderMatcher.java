@@ -1,6 +1,7 @@
 package com.artsoft.stock.batch;
 
 import com.artsoft.stock.entity.Share;
+import com.artsoft.stock.exception.InsufficientBalanceException;
 import com.artsoft.stock.service.StockMarketService;
 import com.artsoft.stock.util.BatchUtil;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,11 @@ public class ShareOrderMatcher extends Thread {
                 this.lock();
                 while (true){
                     Share share = batchUtil.getShare();
-                    stockMarketService.matchShareOrder(share);
+                    try {
+                        stockMarketService.matchShareOrder(share);
+                    } catch (InsufficientBalanceException e) {
+                        e.getMessage();
+                    }
                     this.lock();
                 }
             }

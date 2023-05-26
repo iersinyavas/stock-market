@@ -11,21 +11,13 @@ import java.util.List;
 @Repository
 public interface TraderRepository extends JpaRepository<Trader, Long> {
 
-    @Query(value = "select t.traderId from Trader t where t.haveLot > 0 and t.balance >= :price")
-    List<Long> getTraderListForOpenSession(BigDecimal price);
+    @Query(value = "select t.traderId from Trader t where t.haveLot > 0 and t.balance >= :price and t.traderId <> :traderId")
+    List<Long> getTraderListForOpenSession(BigDecimal price, Long traderId);
 
-    @Query(value = "select t.traderId from Trader t where t.haveLot > 0 and t.balance >= :price and t.traderId in :traderIdList")
-    List<Long> getTraderListByTraderId(List<Long> traderIdList, BigDecimal price);
+    @Query(value = "select t.traderId from Trader t where t.balance >= :price and t.traderId <> :traderId and t.traderId in :traderIdList")
+    List<Long> getTraderListByTraderId(List<Long> traderIdList, Long traderId, BigDecimal price);
 
-    @Query(value = "select t.traderId from Trader t where t.haveLot > 0 and t.cost <= :currentSellPrice")
-    List<Trader> getTraderListWantOnlyBuy(BigDecimal currentSellPrice);
+    @Query(value = "select t from Trader t where t.currentHaveLot = 0 and t.traderId <> :traderId")
+    List<Trader> getTraderListByCurrentHaveLotEqualsZero(Long traderId);
 
-    @Query(value = "select t from Trader t")
-    List<Trader> getTraderListByBrokerageFirm(String brokerageFirm);
-
-    @Query(value = "select t.traderId from Trader t where t.haveLot > 0 and t.balance >= :price")
-    List<Long> getTraderList(BigDecimal price);
-
-    @Query(value = "update Trader t set t.currentHaveLot = t.currentHaveLot + :currentHaveLot where t.traderId = :traderId")
-    void updateTrader(BigDecimal currentHaveLot, Long traderId);
 }
