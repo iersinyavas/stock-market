@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -39,13 +40,12 @@ public class TraderService {
             nameBuilder.append(name[random.nextInt(name.length)]);
         }
         trader.setName(nameBuilder.toString());
-        trader.setBalance(new BigDecimal(100));
+        trader.setBalance(new BigDecimal(random.nextInt(491)+10));
 
         BigDecimal randomLot = RandomData.randomLot(share.getLot());
         trader.setHaveLot(randomLot.compareTo(BigDecimal.valueOf(100L)) > 0 ? RandomData.randomLot(BigDecimal.valueOf(100)) : randomLot);
         trader.setCurrentHaveLot(trader.getHaveLot());
         trader.setCost(RandomData.randomShareOrderPrice(BigDecimal.ONE, BigDecimal.valueOf(3)));
-        trader.setCostAmount(trader.getCost().multiply(trader.getCurrentHaveLot()));
 
         share.setLot(share.getLot().subtract(trader.getHaveLot()));
         log.info("Trader adı : {}", trader.getName());
@@ -65,7 +65,6 @@ public class TraderService {
         trader.setHaveLot(BigDecimal.ZERO);
         trader.setCurrentHaveLot(BigDecimal.ZERO);
         trader.setCost(share.getPriceStep().getPrice());
-        trader.setCostAmount(BigDecimal.ZERO);
 
         log.info("Trader adı : {}", trader.getName());
         return trader;
@@ -85,12 +84,12 @@ public class TraderService {
             }
         }
 
-        traderIdList = traderRepository.getTraderListByTraderId(traderIdForShareOrder, batchUtil.getTraderId(), share.getPrice());
+        traderIdList = traderRepository.getTraderIdListByTraderId(traderIdForShareOrder, batchUtil.getTraderId(), share.getPrice());
         return new LinkedBlockingQueue<>(traderIdList);
     }
 
-    public List<Long> getTraderList(Share share) throws InterruptedException {
-        List<Long> traderIdList = this.getAllTraderIdList(share.getPrice());
+    public List<Long> getTraderList(BigDecimal price) throws InterruptedException {
+        List<Long> traderIdList = this.getAllTraderIdList(price);
 
         BlockingQueue<Long> traderIdQueue = new LinkedBlockingQueue<>(traderIdList);
         List<Long> traderIdForShareOrder = new ArrayList<>();
@@ -102,7 +101,23 @@ public class TraderService {
             }
         }
 
-        return traderRepository.getTraderListByTraderId(traderIdForShareOrder, batchUtil.getTraderId(), share.getPrice());
+        return traderRepository.getTraderIdListByTraderId(traderIdForShareOrder, batchUtil.getTraderId(), price);
+    }
+
+    public List<Trader> getTraderList() throws InterruptedException {
+        List<Long> traderIdList = traderRepository.findAll().stream().map(trader -> trader.getTraderId()).collect(Collectors.toList());
+
+        BlockingQueue<Long> traderIdQueue = new LinkedBlockingQueue<>(traderIdList);
+        List<Long> traderIdForShareOrder = new ArrayList<>();
+
+        while (traderIdQueue.size() != 0){
+            Long traderId = traderIdQueue.take();
+            if (random.nextInt(2) == 1){
+                traderIdForShareOrder.add(traderId);
+            }
+        }
+
+        return traderRepository.getTraderListByTraderId(traderIdForShareOrder);
     }
 
     public List<Long> getAllTraderIdList(BigDecimal price){

@@ -146,9 +146,9 @@ public class StockMarketService {
         if (trader.getBalance().compareTo(BigDecimal.ZERO) == 0){
             throw new InsufficientBalanceException();
         }
+        buy.setVolume(buy.getPrice().multiply(sell.getLot()));
         BigDecimal divide = BigDecimal.valueOf(trader.getBalance().divide(sell.getPrice(), RoundingMode.FLOOR).longValue());
         divide = divide.compareTo(buy.getLot()) > 0 ? buy.getLot() : divide;
-        buy.setVolume(buy.getPrice().multiply(divide));
         if (divide.compareTo(sell.getLot()) <= 0){
             buy.setLot(divide);
             buy.setVolume(buy.getPrice().multiply(buy.getLot()));
@@ -196,8 +196,9 @@ public class StockMarketService {
         traderRepository.save(traderSell);
 
         Trader traderBuy = traderRepository.findById(buy.getTrader().getTraderId()).get();
-        traderBuy.setCurrentHaveLot(traderBuy.getCurrentHaveLot().add(buy.getLot()));
         traderBuy.setHaveLot(traderBuy.getHaveLot().add(buy.getLot()));
+        traderBuy.setCost(shareOrderUtil.costCalculate(traderBuy, buy)); //cost hesabını gözden geçir yanlış hesaplıyor
+        traderBuy.setCurrentHaveLot(traderBuy.getCurrentHaveLot().add(buy.getLot()));
         traderRepository.save(traderBuy);
         this.swapProcess(sell, buy, swapProcess, traderSell, traderBuy);
 
@@ -217,8 +218,9 @@ public class StockMarketService {
         traderRepository.save(traderSell);
 
         Trader traderBuy = traderRepository.findById(buy.getTrader().getTraderId()).get();
-        traderBuy.setCurrentHaveLot(traderBuy.getCurrentHaveLot().add(sell.getLot()));
         traderBuy.setHaveLot(traderBuy.getHaveLot().add(sell.getLot()));
+        traderBuy.setCost(shareOrderUtil.costCalculate(traderBuy, buy)); //cost hesabını gözden geçir yanlış hesaplıyor
+        traderBuy.setCurrentHaveLot(traderBuy.getCurrentHaveLot().add(sell.getLot()));
         traderRepository.save(traderBuy);
         this.swapProcess(sell, buy, swapProcess, traderSell, traderBuy);
 
@@ -244,8 +246,6 @@ public class StockMarketService {
         if (buy.getShareOrderType().equals(ShareOrderType.MARKET.name())){
             traderBuy.setBalance(traderBuy.getBalance().subtract(buy.getVolume()));
         }
-        traderBuy.setCostAmount(traderBuy.getCostAmount().add(buy.getVolume()));
-        traderBuy.setCost(shareOrderUtil.costCalculate(traderBuy, buy)); //cost hesabını gözden geçir yanlış hesaplıyor
         traderRepository.save(traderBuy);
     }
 

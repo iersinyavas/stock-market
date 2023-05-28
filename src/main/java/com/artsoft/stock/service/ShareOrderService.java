@@ -83,6 +83,10 @@ public class ShareOrderService extends BaseService{
         shareOrder.setShareOrderType(ShareOrderType.LIMIT.name());
         CONTROL:{
             if (shareOrder.getPrice().compareTo(trader.getCost()) < 0 || (shareOrder.getPrice().compareTo(trader.getCost()) == 0 && shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY))){
+                if (trader.getBalance().compareTo(share.getPriceStep().getPrice()) < 0){
+                    log.info("Yetersiz bakiye...");
+                    return;
+                }
                 if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) <= 0){
                     shareOrder.setShareOrderType(RandomData.shareOrderType().name());
                     shareOrder.setShareOrderStatus(ShareOrderStatus.BUY.name());
@@ -95,6 +99,10 @@ public class ShareOrderService extends BaseService{
                 }
                 this.processBuy(trader, shareOrder);
             } else if (shareOrder.getPrice().compareTo(trader.getCost()) > 0 || shareOrder.getPrice().compareTo(trader.getCost()) == 0){
+                if (trader.getBalance().compareTo(share.getPriceStep().getPrice()) < 0){
+                    log.info("Yetersiz bakiye...");
+                    return;
+                }
                 if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY.name())){
                     if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) <= 0){
                         shareOrder.setShareOrderType(RandomData.shareOrderType().name());
@@ -108,6 +116,7 @@ public class ShareOrderService extends BaseService{
                     this.processBuy(trader, shareOrder);
                 }else { //SELL
                     if (trader.getHaveLot().compareTo(BigDecimal.ZERO) == 0){
+                        log.info("Yetersiz lot...");
                         return;
                     }
                     if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) >= 0){
@@ -131,24 +140,38 @@ public class ShareOrderService extends BaseService{
     @Transactional
     public ShareOrder createShareOrder(ShareOrderRequest shareOrderRequest) throws InsufficientLotException, InsufficientBalanceException {
         ShareOrder shareOrder = new ShareOrder();
+        shareOrder.setShareOrderStatus(shareOrderRequest.getShareOrderStatus());
+        shareOrder.setShareOrderType(shareOrderRequest.getShareOrderType());
         Trader trader = traderRepository.findById(shareOrderRequest.getTraderId()).get();
-        if (shareOrderRequest.getShareOrderStatus().equals(ShareOrderStatus.SELL.name()) && trader.getCurrentHaveLot().compareTo(shareOrderRequest.getLot()) < 0){
-            log.info("Yetersiz lot...");
-            throw new InsufficientLotException();
-        }
         shareOrder.setTrader(trader);
         shareOrder.setPrice(shareOrderRequest.getPrice());
         shareOrder.setLot(shareOrderRequest.getLot());
         shareOrder.setVolume(shareOrder.getPrice().multiply(shareOrder.getLot()));
-        if (shareOrderRequest.getShareOrderStatus().equals(ShareOrderStatus.BUY) &&
-                shareOrderRequest.getShareOrderType().equals(ShareOrderType.LIMIT.name()) &&
-                trader.getBalance().compareTo(shareOrder.getVolume()) < 0){
-            throw new InsufficientBalanceException();
+        if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY.name())){
+            if (shareOrder.getShareOrderType().equals(ShareOrderType.MARKET.name())){
+                shareOrder.setPrice(null);
+                shareOrder.setVolume(null);
+            }else {//LIMIT
+                if (trader.getBalance().compareTo(shareOrder.getVolume()) < 0){
+                    log.info("Yetersiz bakiye...");
+                    throw new InsufficientBalanceException();
+                }
+                trader.setBalance(trader.getBalance().subtract(shareOrder.getVolume()));
+                traderRepository.save(trader);
+            }
+        }else {//SELL
+            if (trader.getHaveLot().compareTo(shareOrder.getLot()) < 0){
+                log.info("Yetersiz lot...");
+                throw new InsufficientLotException();
+            }
+            if (shareOrder.getShareOrderType().equals(ShareOrderType.MARKET.name())){
+                shareOrder.setPrice(null);
+                shareOrder.setVolume(null);
+            }
+            trader.setHaveLot(trader.getHaveLot().subtract(shareOrder.getLot()));
+            traderRepository.save(trader);
         }
-        shareOrder.setShareOrderStatus(shareOrderRequest.getShareOrderStatus());
-        shareOrder.setShareOrderType(shareOrderRequest.getShareOrderType());
         shareOrder.setCreateTime(Timestamp.valueOf(LocalDateTime.now()));
-
         return shareOrderRepository.save(shareOrder);
     }
 
