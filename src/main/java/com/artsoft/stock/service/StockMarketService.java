@@ -1,10 +1,13 @@
 package com.artsoft.stock.service;
 
+import com.artsoft.stock.dto.CandleStick;
+import com.artsoft.stock.dto.SwapProcessDTO;
 import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.entity.ShareOrder;
 import com.artsoft.stock.entity.SwapProcess;
 import com.artsoft.stock.entity.Trader;
 import com.artsoft.stock.exception.InsufficientBalanceException;
+import com.artsoft.stock.mapper.SwapProcessMapper;
 import com.artsoft.stock.repository.ShareOrderRepository;
 import com.artsoft.stock.repository.ShareRepository;
 import com.artsoft.stock.repository.SwapProcessRepository;
@@ -13,12 +16,18 @@ import com.artsoft.stock.util.BatchUtil;
 import com.artsoft.stock.util.GeneralEnumeration.*;
 import com.artsoft.stock.util.PriceStep;
 import com.artsoft.stock.util.ShareOrderUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.converter.MessageConverter;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,14 +42,19 @@ public class StockMarketService {
     private final ShareOrderRepository shareOrderRepository;
     private final ShareOrderUtil shareOrderUtil;
     private final SwapProcessRepository swapProcessRepository;
-
+    private final SimpMessagingTemplate template;
+    private final CandleStickService candleStickService;
+    ObjectMapper objectMapper = new ObjectMapper();
+    MappingJackson2MessageConverter mappingJackson2MessageConverter = new MappingJackson2MessageConverter();
 
     public void sendShareOrderToStockMarket(Share share, ShareOrder shareOrder) throws InterruptedException {
         if (shareOrder.getShareOrderType().equals(ShareOrderType.LIMIT.name())){
             share.getPriceStep().getPrice(shareOrder).put(shareOrder);
         }else {
             PriceStep.marketShareOrderQueue.put(shareOrder);
-        }
+        }/*else {
+            PriceStep.marketSellShareOrderQueue.put(shareOrder);
+        }*/
         log.info("Gönderilen Emir : {}", shareOrder);
     }
 
@@ -57,13 +71,19 @@ public class StockMarketService {
         BlockingQueue<ShareOrder> limitBuyShareOrderQueue = share.getPriceStep().getLimitBuyShareOrderQueue();
 
         BlockingQueue<ShareOrder> shareOrderQueue = this.shareOrderQueueIsEmpty(PriceStep.marketShareOrderQueue);
+        //BlockingQueue<ShareOrder> shareOrderQueue = this.shareOrderQueueIsEmpty(PriceStep.marketSellShareOrderQueue);
+
+        //TODO Market emirlerine buy ve sell diye ayırarak işlem yapılacak gerekli düzenlemeyi yap
+        // Zaten buy için max fiyatta sell kuyruğu devreye girecek
+        // sell için min fiyatta buy kuyruğu devreye girer yarım kalan market orderlarda
+
         if (Objects.nonNull(shareOrderQueue)){
             ShareOrder shareOrder = shareOrderQueue.peek();
             if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY.name())){
                 Trader trader = traderRepository.findById(shareOrder.getTrader().getTraderId()).get();
-                if (trader.getBalance().compareTo(share.getPriceStep().getPrice()) < 0){
+/*                if (trader.getBalance().compareTo(share.getPriceStep().getPrice()) < 0){
                     throw new InsufficientBalanceException();
-                }
+                }*/
                 while (shareOrder.getLot().compareTo(BigDecimal.ZERO) > 0){
                     if (share.getPriceStep().getLimitSellShareOrderQueue().isEmpty()){
                         share.setPriceStep(share.getPriceStep().priceUp(share.getPriceStep()));
@@ -124,6 +144,8 @@ public class StockMarketService {
             ShareOrder sell = limitSellShareOrderQueue.peek();
             ShareOrder buy = limitBuyShareOrderQueue.peek();
             SwapProcess swapProcess = new SwapProcess();
+            swapProcess.setShareOrderStatus(sell.getCreateTime().compareTo(buy.getCreateTime()) > 0 ? sell.getShareOrderStatus() : buy.getShareOrderStatus());
+            swapProcess.setShareOrderType(ShareOrderType.LIMIT.name());
             if (sell.getLot().compareTo(buy.getLot()) < 0){
                 this.ifBuyGreaterThanSell(limitSellShareOrderQueue, sell, buy, swapProcess);
             }else if(sell.getLot().compareTo(buy.getLot()) > 0){
@@ -231,7 +253,7 @@ public class StockMarketService {
         limitSellShareOrderQueue.take();
     }
 
-    private void swapProcess(ShareOrder sell, ShareOrder buy, SwapProcess swapProcess, Trader traderSell, Trader traderBuy) {
+    public void swapProcess(ShareOrder sell, ShareOrder buy, SwapProcess swapProcess, Trader traderSell, Trader traderBuy) {
         swapProcess.setBuyer(buy.getTrader().getName());
         swapProcess.setSeller(sell.getTrader().getName());
         swapProcess.setTransactionTime(LocalDateTime.now());
@@ -239,6 +261,21 @@ public class StockMarketService {
 
         this.sellProcessEnd(sell, traderSell);
         this.buyProcessEnd(buy, traderBuy);
+
+        SwapProcessDTO swapProcessDTO = SwapProcessMapper.INSTANCE.entityToDTO(swapProcess);
+        LocalDateTime transactionTime = swapProcessDTO.getTransactionTime();
+        transactionTime = LocalDateTime.of(transactionTime.getYear(), transactionTime.getMonth(), transactionTime.getDayOfMonth(), transactionTime.getHour(), transactionTime.getMinute());
+        swapProcessDTO.setTransactionTime(transactionTime);
+
+        template.setMessageConverter(mappingJackson2MessageConverter);
+        CandleStick candleStick = candleStickService.setValue(swapProcessDTO);
+        String candleStickJson;
+        try {
+            candleStickJson = objectMapper.writeValueAsString(candleStick);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        template.convertAndSend("/topic/stock-chart", candleStickJson);
         log.info("Gerçekleşen işlem : Alan :{} - Satan :{}", buy.getTrader().getName(), sell.getTrader().getName());
     }
 

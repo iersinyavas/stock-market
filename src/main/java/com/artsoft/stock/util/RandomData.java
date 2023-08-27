@@ -38,6 +38,10 @@ public class RandomData {
         return ShareOrderStatus.values()[random.nextInt(ShareOrderStatus.values().length)];
     }
 
+    public static TraderBehavior traderBehavior(){
+        return TraderBehavior.values()[random.nextInt(TraderBehavior.values().length)];
+    }
+
     public static ShareCode shareCode(){
         return ShareCode.values()[random.nextInt(ShareCode.values().length)];
     }

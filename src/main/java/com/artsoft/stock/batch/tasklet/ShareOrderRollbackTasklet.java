@@ -6,6 +6,7 @@ import com.artsoft.stock.entity.Trader;
 import com.artsoft.stock.service.ShareOrderService;
 import com.artsoft.stock.service.TraderService;
 import com.artsoft.stock.util.BatchUtil;
+import com.artsoft.stock.util.GeneralEnumeration.*;
 import com.artsoft.stock.util.PriceStep;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.StepContribution;
@@ -33,6 +34,18 @@ public class ShareOrderRollbackTasklet implements Tasklet {
             share.setPrice(share.getPriceStep().getPrice());
             share.setPriceStep(share.getPriceStep().getMaxPrice(share.getPriceStep()));
             Trader trader;
+            while (!PriceStep.marketShareOrderQueue.isEmpty()){
+                ShareOrder shareOrder = PriceStep.marketShareOrderQueue.take();
+                if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.SELL.name())){
+                    trader = traderService.getTrader(shareOrder.getTrader().getTraderId());
+                    trader.setHaveLot(trader.getHaveLot().add(shareOrder.getLot()));
+                    traderService.save(trader);
+                    shareOrderService.delete(shareOrder);
+                }else {
+                    shareOrderService.delete(shareOrder);
+                }
+            }
+
             while (true){
                 while (this.isEmpty(share.getPriceStep())){
                     share.setPriceStep(share.getPriceStep().getPriceStepDown());

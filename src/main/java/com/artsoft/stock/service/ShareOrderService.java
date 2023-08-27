@@ -11,6 +11,7 @@ import com.artsoft.stock.repository.TraderRepository;
 import com.artsoft.stock.request.ShareOrderRequest;
 import com.artsoft.stock.util.GeneralEnumeration.*;
 import com.artsoft.stock.util.RandomData;
+import com.artsoft.stock.util.TraderBehavior;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ public class ShareOrderService extends BaseService{
     private final ShareRepository shareRepository;
     private final ShareOrderRepository shareOrderRepository;
     private final StockMarketService stockMarketService;
+    private final TraderService traderService;
 
     @Transactional
     public void createShareOrderOpenSession(Share share, Long traderId) throws InterruptedException {
@@ -44,27 +46,28 @@ public class ShareOrderService extends BaseService{
         shareOrder.setTrader(trader);
         shareOrder.setCreateTime(Timestamp.valueOf(LocalDateTime.now()));
         shareOrder.setPrice(RandomData.randomShareOrderPrice(share.getMinPrice(), share.getMaxPrice()));
-        shareOrder.setShareOrderStatus(RandomData.shareOrderStatus().name());
-
+        //shareOrder.setShareOrderStatus(RandomData.shareOrderStatus().name());
+        traderService.setTraderBehavior(trader, share, shareOrder);
         //Açılış seansı olduğu için
         shareOrder.setShareOrderType(ShareOrderType.LIMIT.name()); //shareOrder.setShareOrderType(RandomData.shareOrderType().toString());
-        if (shareOrder.getPrice().compareTo(trader.getCost()) < 0 || (shareOrder.getPrice().compareTo(trader.getCost()) == 0 && shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY))){
+        if (trader.getTraderBehavior().equals(TraderBehavior.BUYER.name())){
+            if (trader.getBalance().compareTo(share.getPriceStep().getPrice()) < 0){
+                log.info("Yetersiz bakiye...");
+                return;
+            }
             if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) <= 0){
                 shareOrder.setPrice(share.getPriceStep().getPrice());
             }
             this.processBuy(trader, shareOrder);
-        } else if (shareOrder.getPrice().compareTo(trader.getCost()) > 0 || shareOrder.getPrice().compareTo(trader.getCost()) == 0){
-            if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY)){
-                if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) <= 0){
-                    shareOrder.setPrice(share.getPriceStep().getPrice());
-                }
-                this.processBuy(trader, shareOrder);
-            }else {
-                if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) >= 0){
-                    shareOrder.setPrice(share.getPriceStep().getPrice());
-                }
-                this.processSell(trader, shareOrder);
+        } else {
+            if (trader.getHaveLot().compareTo(BigDecimal.ZERO) == 0){
+                log.info("Yetersiz lot...");
+                return;
             }
+            if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) >= 0){
+                shareOrder.setPrice(share.getPriceStep().getPrice());
+            }
+            this.processSell(trader, shareOrder);
         }
 
         this.saveProcessEntity(share, trader, shareOrder);
@@ -79,10 +82,12 @@ public class ShareOrderService extends BaseService{
         shareOrder.setTrader(trader);
         shareOrder.setCreateTime(Timestamp.valueOf(LocalDateTime.now()));
         shareOrder.setPrice(RandomData.randomShareOrderPrice(share.getMinPrice(), share.getMaxPrice()));
-        shareOrder.setShareOrderStatus(RandomData.shareOrderStatus().name());
-        shareOrder.setShareOrderType(ShareOrderType.LIMIT.name());
+        //shareOrder.setShareOrderStatus(RandomData.shareOrderStatus().name());
+        traderService.setTraderBehavior(trader, share, shareOrder);
+        shareOrder.setShareOrderType(RandomData.shareOrderType().name());
+
         CONTROL:{
-            if (shareOrder.getPrice().compareTo(trader.getCost()) < 0 || (shareOrder.getPrice().compareTo(trader.getCost()) == 0 && shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY))){
+            if (trader.getTraderBehavior().equals(TraderBehavior.BUYER.name())){
                 if (trader.getBalance().compareTo(share.getPriceStep().getPrice()) < 0){
                     log.info("Yetersiz bakiye...");
                     return;
@@ -98,40 +103,23 @@ public class ShareOrderService extends BaseService{
                     shareOrder.setPrice(share.getPriceStep().getPrice());
                 }
                 this.processBuy(trader, shareOrder);
-            } else if (shareOrder.getPrice().compareTo(trader.getCost()) > 0 || shareOrder.getPrice().compareTo(trader.getCost()) == 0){
-                if (trader.getBalance().compareTo(share.getPriceStep().getPrice()) < 0){
-                    log.info("Yetersiz bakiye...");
+            } else { //SELL
+                if (trader.getHaveLot().compareTo(BigDecimal.ZERO) == 0){
+                    log.info("Yetersiz lot...");
                     return;
                 }
-                if (shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY.name())){
-                    if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) <= 0){
-                        shareOrder.setShareOrderType(RandomData.shareOrderType().name());
-                        if (shareOrder.getShareOrderType().equals(ShareOrderType.MARKET.name())){
-                            shareOrder.setPrice(null);
-                            shareOrder.setLot(RandomData.randomLot(trader.getBalance().divide(share.getPrice(), 2, RoundingMode.FLOOR)));
-                            break CONTROL;
-                        }
-                        shareOrder.setPrice(share.getPriceStep().getPrice());
+                if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) >= 0){
+                    shareOrder.setShareOrderType(RandomData.shareOrderType().name());
+                    shareOrder.setShareOrderStatus(ShareOrderStatus.SELL.name());
+                    if (shareOrder.getShareOrderType().equals(ShareOrderType.MARKET.name())){
+                        shareOrder.setPrice(null);
+                        shareOrder.setLot(RandomData.randomLot(trader.getHaveLot()));
+                        trader.setHaveLot(trader.getHaveLot().subtract(shareOrder.getLot()));
+                        break CONTROL;
                     }
-                    this.processBuy(trader, shareOrder);
-                }else { //SELL
-                    if (trader.getHaveLot().compareTo(BigDecimal.ZERO) == 0){
-                        log.info("Yetersiz lot...");
-                        return;
-                    }
-                    if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) >= 0){
-                        shareOrder.setShareOrderType(RandomData.shareOrderType().name());
-                        shareOrder.setShareOrderStatus(ShareOrderStatus.SELL.name());
-                        if (shareOrder.getShareOrderType().equals(ShareOrderType.MARKET.name())){
-                            shareOrder.setPrice(null);
-                            shareOrder.setLot(RandomData.randomLot(trader.getHaveLot()));
-                            trader.setHaveLot(trader.getHaveLot().subtract(shareOrder.getLot()));
-                            break CONTROL;
-                        }
-                        shareOrder.setPrice(share.getPriceStep().getPrice());
-                    }
-                    this.processSell(trader, shareOrder);
+                    shareOrder.setPrice(share.getPriceStep().getPrice());
                 }
+                this.processSell(trader, shareOrder);
             }
         }
         this.saveProcessEntity(share, trader, shareOrder);

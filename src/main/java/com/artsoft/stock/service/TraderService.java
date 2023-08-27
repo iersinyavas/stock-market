@@ -1,12 +1,14 @@
 package com.artsoft.stock.service;
 
 import com.artsoft.stock.entity.Share;
+import com.artsoft.stock.entity.ShareOrder;
 import com.artsoft.stock.entity.Trader;
 import com.artsoft.stock.repository.ShareRepository;
 import com.artsoft.stock.repository.TraderRepository;
 import com.artsoft.stock.request.TraderRequest;
 import com.artsoft.stock.util.BatchUtil;
 import com.artsoft.stock.util.RandomData;
+import com.artsoft.stock.util.TraderBehavior;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,12 +42,15 @@ public class TraderService {
             nameBuilder.append(name[random.nextInt(name.length)]);
         }
         trader.setName(nameBuilder.toString());
-        trader.setBalance(new BigDecimal(random.nextInt(491)+10));
+        trader.setBalance(new BigDecimal(random.nextInt(491)+10).multiply(share.getPrice()));
 
         BigDecimal randomLot = RandomData.randomLot(share.getLot());
         trader.setHaveLot(randomLot.compareTo(BigDecimal.valueOf(100L)) > 0 ? RandomData.randomLot(BigDecimal.valueOf(100)) : randomLot);
         trader.setCurrentHaveLot(trader.getHaveLot());
         trader.setCost(RandomData.randomShareOrderPrice(BigDecimal.ONE, BigDecimal.valueOf(3)));
+        trader.setTraderBehavior(RandomData.traderBehavior().name());
+        trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(share.getPrice(), share.getPrice().multiply(BigDecimal.valueOf(2))));
+        trader.setPrinceRangeSmall(RandomData.randomShareOrderPrice(share.getPrice().divide(BigDecimal.valueOf(2), RoundingMode.FLOOR), share.getPrice()));
 
         share.setLot(share.getLot().subtract(trader.getHaveLot()));
         log.info("Trader adı : {}", trader.getName());
@@ -60,11 +65,14 @@ public class TraderService {
             nameBuilder.append(name[random.nextInt(name.length)]);
         }
         trader.setName(nameBuilder.toString());
-        trader.setBalance(new BigDecimal(random.nextInt(491)+10));
+        trader.setBalance(new BigDecimal(random.nextInt(491)+10).multiply(share.getPriceStep().getPrice()));
 
         trader.setHaveLot(BigDecimal.ZERO);
         trader.setCurrentHaveLot(BigDecimal.ZERO);
         trader.setCost(share.getPriceStep().getPrice());
+        trader.setTraderBehavior(TraderBehavior.BUYER.name());
+        trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(share.getPrice(), share.getPrice().multiply(BigDecimal.valueOf(2))));
+        trader.setPrinceRangeSmall(RandomData.randomShareOrderPrice(share.getPrice().divide(BigDecimal.valueOf(2), RoundingMode.FLOOR), share.getPrice()));
 
         log.info("Trader adı : {}", trader.getName());
         return trader;
@@ -72,7 +80,7 @@ public class TraderService {
 
     public BlockingQueue<Long> getTraderQueue(Share share) throws InterruptedException {
         Random random = new Random();
-        List<Long> traderIdList = this.getAllTraderIdList(share.getPrice());
+        List<Long> traderIdList = this.getAllTraderIdList();
 
         BlockingQueue<Long> traderIdQueue = new LinkedBlockingQueue<>(traderIdList);
         List<Long> traderIdForShareOrder = new ArrayList<>();
@@ -84,12 +92,12 @@ public class TraderService {
             }
         }
 
-        traderIdList = traderRepository.getTraderIdListByTraderId(traderIdForShareOrder, batchUtil.getTraderId(), share.getPrice());
+        traderIdList = traderRepository.getTraderIdListByTraderId(traderIdForShareOrder, batchUtil.getTraderId());
         return new LinkedBlockingQueue<>(traderIdList);
     }
 
     public List<Long> getTraderList(BigDecimal price) throws InterruptedException {
-        List<Long> traderIdList = this.getAllTraderIdList(price);
+        List<Long> traderIdList = this.getAllTraderIdList();
 
         BlockingQueue<Long> traderIdQueue = new LinkedBlockingQueue<>(traderIdList);
         List<Long> traderIdForShareOrder = new ArrayList<>();
@@ -101,7 +109,7 @@ public class TraderService {
             }
         }
 
-        return traderRepository.getTraderIdListByTraderId(traderIdForShareOrder, batchUtil.getTraderId(), price);
+        return traderRepository.getTraderIdListByTraderId(traderIdForShareOrder, batchUtil.getTraderId());
     }
 
     public List<Trader> getTraderList() throws InterruptedException {
@@ -120,8 +128,8 @@ public class TraderService {
         return traderRepository.getTraderListByTraderId(traderIdForShareOrder);
     }
 
-    public List<Long> getAllTraderIdList(BigDecimal price){
-        return traderRepository.getTraderListForOpenSession(price, batchUtil.getTraderId());
+    public List<Long> getAllTraderIdList(){
+        return traderRepository.getTraderListForOpenSession(batchUtil.getTraderId());
     }
 
     public Trader getTrader(Long traderId){
@@ -138,5 +146,23 @@ public class TraderService {
 
     public void deleteTrader(Trader trader){
         traderRepository.delete(trader);
+    }
+
+    public void setTraderBehavior(Trader trader, Share share, ShareOrder shareOrder){
+        if (share.getPriceStep().getPrice().compareTo(trader.getPrinceRangeBig()) < 0 &&
+                share.getPriceStep().getPrice().compareTo(trader.getPrinceRangeSmall()) > 0){
+            return;
+        }else if (share.getPriceStep().getPrice().compareTo(trader.getPrinceRangeBig()) >= 0){
+            trader.setTraderBehavior(TraderBehavior.SELLER.name());
+            trader.setPrinceRangeSmall(RandomData.randomShareOrderPrice(share.getPriceStep().getPrice().divide(BigDecimal.valueOf(2), RoundingMode.FLOOR), share.getPriceStep() .getPrice()));
+            trader.setPrinceRangeBig(share.getPriceStep().getPrice());
+            shareOrder.setPrice(RandomData.randomShareOrderPrice(share.getPriceStep().getPrice(), share.getMaxPrice()));
+        }else {
+            trader.setTraderBehavior(TraderBehavior.BUYER.name());
+            trader.setPrinceRangeSmall(share.getPriceStep().getPrice());
+            trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(share.getPriceStep().getPrice(), share.getPriceStep().getPrice().multiply(BigDecimal.valueOf(2))));
+            shareOrder.setPrice(RandomData.randomShareOrderPrice(share.getMinPrice(), share.getPriceStep().getPrice()));
+        }
+        traderRepository.save(trader);
     }
 }

@@ -36,16 +36,20 @@ public class ShareOrderCreator extends Thread {
             Share share = batchUtil.getShare();
             List<Long> doProcessTraderList = traderService.getTraderList(share.getPriceStep().getPrice());
             while (true){
-                Thread.sleep(new Random().nextInt(5000));
+                Thread.sleep(new Random().nextInt(1000));
                 synchronized (lock) {
-                    List<Long> traderIdList = traderService.getAllTraderIdList(share.getPriceStep().getPrice());
+                    List<Long> traderIdList = traderService.getAllTraderIdList();
                     Long traderId = traderIdList.get(random.nextInt(traderIdList.size()));
                     if (!doProcessTraderList.contains(traderId) && (random.nextInt(10) == random.nextInt(10))){
                         Trader trader = traderService.createNewTrader(share);
                         trader = traderService.save(trader);
                         traderId = trader.getTraderId();
                     }
+                    /*if (doProcessTraderList.contains(traderId)){
+                        shareOrderService.createShareOrder(share, traderId);
+                    }*/
                     shareOrderService.createShareOrder(share, traderId);
+
                     shareOrderMatcher.openLock();
                 }
             }

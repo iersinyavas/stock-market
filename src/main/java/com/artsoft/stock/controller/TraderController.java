@@ -17,7 +17,7 @@ import javax.ws.rs.core.MediaType;
 @RestController
 @RequestMapping("/trader")
 @RequiredArgsConstructor
-@CrossOrigin
+@CrossOrigin(origins = "*")
 public class TraderController {
 
     private final BatchUtil batchUtil;

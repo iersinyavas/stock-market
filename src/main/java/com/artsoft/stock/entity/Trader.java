@@ -32,4 +32,13 @@ public class Trader implements Serializable {
 
     @Column(name = "current_have_lot")
     private BigDecimal currentHaveLot;
+
+    @Column(name = "trader_behavior")
+    private String traderBehavior;
+
+    @Column(name = "prince_range_big")
+    private BigDecimal princeRangeBig;
+
+    @Column(name = "prince_range_small")
+    private BigDecimal princeRangeSmall;
 }
