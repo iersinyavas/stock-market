@@ -34,7 +34,7 @@ public class StockChartService {
             CandleStick candleStick = new CandleStick();
             List<SwapProcess> dojiSwapProcessList = stockChartMap.get(localDateTime);
             BigDecimal volume = dojiSwapProcessList.stream().map(SwapProcess::getVolume).reduce(BigDecimal::add).get();
-            candleStick.setVolume(volume);
+            //candleStick.setVolume(volume);
             SwapProcess swapProcess = dojiSwapProcessList.get(0);
             candleStick.setOpen(swapProcess.getPrice());
             swapProcess = dojiSwapProcessList.get(dojiSwapProcessList.size() - 1);

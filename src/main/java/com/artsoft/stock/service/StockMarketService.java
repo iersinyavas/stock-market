@@ -88,6 +88,7 @@ public class StockMarketService {
                     if (share.getPriceStep().getLimitSellShareOrderQueue().isEmpty()){
                         share.setPriceStep(share.getPriceStep().priceUp(share.getPriceStep()));
                     }
+                    this.saveAndSendSwapProcess(null, null, share);
                     shareOrder.setPrice(share.getPriceStep().getPrice());
                     limitSellShareOrderQueue = share.getPriceStep().getLimitSellShareOrderQueue();
                     ShareOrder sell = limitSellShareOrderQueue.peek();
@@ -112,6 +113,7 @@ public class StockMarketService {
                     if (share.getPriceStep().getLimitBuyShareOrderQueue().isEmpty()){
                         share.setPriceStep(share.getPriceStep().priceDown(share.getPriceStep()));
                     }
+                    this.saveAndSendSwapProcess(null, null, share);
                     shareOrder.setPrice(share.getPriceStep().getPrice());
                     limitBuyShareOrderQueue = share.getPriceStep().getLimitBuyShareOrderQueue();
                     ShareOrder buy = limitBuyShareOrderQueue.peek();
@@ -185,6 +187,7 @@ public class StockMarketService {
         } else {
             share.setPriceStep(share.getPriceStep().priceDown(share.getPriceStep()));
         }
+        this.saveAndSendSwapProcess(null, null, share);
     }
 
     private void ifSellEqualsBuy(BlockingQueue<ShareOrder> limitSellShareOrderQueue, BlockingQueue<ShareOrder> limitBuyShareOrderQueue, ShareOrder sell, ShareOrder buy, SwapProcess swapProcess) throws InterruptedException {
@@ -254,21 +257,28 @@ public class StockMarketService {
     }
 
     public void swapProcess(ShareOrder sell, ShareOrder buy, SwapProcess swapProcess, Trader traderSell, Trader traderBuy) {
-        swapProcess.setBuyer(buy.getTrader().getName());
-        swapProcess.setSeller(sell.getTrader().getName());
-        swapProcess.setTransactionTime(LocalDateTime.now());
-        swapProcessRepository.save(swapProcess);
 
         this.sellProcessEnd(sell, traderSell);
         this.buyProcessEnd(buy, traderBuy);
 
-        SwapProcessDTO swapProcessDTO = SwapProcessMapper.INSTANCE.entityToDTO(swapProcess);
-        LocalDateTime transactionTime = swapProcessDTO.getTransactionTime();
-        transactionTime = LocalDateTime.of(transactionTime.getYear(), transactionTime.getMonth(), transactionTime.getDayOfMonth(), transactionTime.getHour(), transactionTime.getMinute());
-        swapProcessDTO.setTransactionTime(transactionTime);
+        swapProcess.setBuyer(buy.getTrader().getName());
+        swapProcess.setSeller(sell.getTrader().getName());
 
+        SwapProcessDTO swapProcessDTO = SwapProcessMapper.INSTANCE.entityToDTO(swapProcess);
+
+        this.saveAndSendSwapProcess(swapProcess, swapProcessDTO, null);
+        log.info("Gerçekleşen işlem : Alan :{} - Satan :{}", buy.getTrader().getName(), sell.getTrader().getName());
+    }
+
+    private void saveAndSendSwapProcess(SwapProcess swapProcess, SwapProcessDTO swapProcessDTO, Share share) {
         template.setMessageConverter(mappingJackson2MessageConverter);
-        CandleStick candleStick = candleStickService.setValue(swapProcessDTO);
+        CandleStick candleStick;
+        if (Objects.isNull(share)){
+            candleStick = candleStickService.setValue(swapProcessDTO, swapProcess);
+        }else {
+            candleStick = candleStickService.setValue(share);
+        }
+
         String candleStickJson;
         try {
             candleStickJson = objectMapper.writeValueAsString(candleStick);
@@ -276,7 +286,6 @@ public class StockMarketService {
             throw new RuntimeException(e);
         }
         template.convertAndSend("/topic/stock-chart", candleStickJson);
-        log.info("Gerçekleşen işlem : Alan :{} - Satan :{}", buy.getTrader().getName(), sell.getTrader().getName());
     }
 
     public void buyProcessEnd(ShareOrder buy, Trader traderBuy) {
