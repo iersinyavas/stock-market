@@ -5,12 +5,17 @@ import com.artsoft.stock.dto.SwapProcessDTO;
 import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.entity.SwapProcess;
 import com.artsoft.stock.repository.SwapProcessRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -24,6 +29,28 @@ public class CandleStickService {
     private static BigDecimal low = BigDecimal.ZERO;
     private static BigDecimal high = BigDecimal.ZERO;
     private static BigDecimal volume = BigDecimal.ZERO;
+
+    protected final SimpMessagingTemplate template;
+    ObjectMapper objectMapper = new ObjectMapper();
+    MappingJackson2MessageConverter mappingJackson2MessageConverter = new MappingJackson2MessageConverter();
+
+    protected void saveAndSendSwapProcess(SwapProcess swapProcess, SwapProcessDTO swapProcessDTO, Share share) {
+        template.setMessageConverter(mappingJackson2MessageConverter);
+        CandleStick candleStick;
+        if (Objects.isNull(share)){
+            candleStick = this.setValue(swapProcessDTO, swapProcess);
+        }else {
+            candleStick = this.setValue(share);
+        }
+
+        String candleStickJson;
+        try {
+            candleStickJson = objectMapper.writeValueAsString(candleStick);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        template.convertAndSend("/topic/stock-chart", candleStickJson);
+    }
     public CandleStick setValue(SwapProcessDTO swapProcessDTO, SwapProcess swapProcess){
         CandleStick candleStick = new CandleStick();
         /*DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");

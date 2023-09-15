@@ -1,6 +1,5 @@
 package com.artsoft.stock.entity;
 
-import com.artsoft.stock.service.ShareOrderSender;
 import com.artsoft.stock.util.PriceStep;
 import lombok.Data;
 

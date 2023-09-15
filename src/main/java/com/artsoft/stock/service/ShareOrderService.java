@@ -9,7 +9,7 @@ import com.artsoft.stock.repository.ShareOrderRepository;
 import com.artsoft.stock.repository.ShareRepository;
 import com.artsoft.stock.repository.TraderRepository;
 import com.artsoft.stock.request.ShareOrderRequest;
-import com.artsoft.stock.util.GeneralEnumeration.*;
+import com.artsoft.stock.constant.GeneralEnumeration.*;
 import com.artsoft.stock.util.RandomData;
 import com.artsoft.stock.util.TraderBehavior;
 import lombok.RequiredArgsConstructor;
@@ -21,11 +21,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 @Slf4j
 @Service

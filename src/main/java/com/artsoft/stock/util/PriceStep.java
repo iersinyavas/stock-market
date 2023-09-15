@@ -1,6 +1,6 @@
 package com.artsoft.stock.util;
 
-import com.artsoft.stock.entity.Share;
+import com.artsoft.stock.constant.GeneralEnumeration;
 import com.artsoft.stock.entity.ShareOrder;
 import lombok.Getter;
 import lombok.Setter;

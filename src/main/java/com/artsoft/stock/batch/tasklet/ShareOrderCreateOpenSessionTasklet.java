@@ -1,14 +1,10 @@
 package com.artsoft.stock.batch.tasklet;
 
 import com.artsoft.stock.entity.Share;
-import com.artsoft.stock.entity.Trader;
-import com.artsoft.stock.repository.ShareRepository;
-import com.artsoft.stock.repository.TraderRepository;
 import com.artsoft.stock.service.ShareOrderService;
 import com.artsoft.stock.service.ShareService;
 import com.artsoft.stock.service.TraderService;
 import com.artsoft.stock.util.BatchUtil;
-import com.artsoft.stock.util.GeneralEnumeration.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.scope.context.ChunkContext;

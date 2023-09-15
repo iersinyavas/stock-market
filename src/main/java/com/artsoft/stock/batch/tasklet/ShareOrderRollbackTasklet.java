@@ -6,7 +6,7 @@ import com.artsoft.stock.entity.Trader;
 import com.artsoft.stock.service.ShareOrderService;
 import com.artsoft.stock.service.TraderService;
 import com.artsoft.stock.util.BatchUtil;
-import com.artsoft.stock.util.GeneralEnumeration.*;
+import com.artsoft.stock.constant.GeneralEnumeration.*;
 import com.artsoft.stock.util.PriceStep;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.StepContribution;

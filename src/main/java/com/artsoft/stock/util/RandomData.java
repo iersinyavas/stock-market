@@ -1,7 +1,7 @@
 package com.artsoft.stock.util;
 
 
-import com.artsoft.stock.util.GeneralEnumeration.*;
+import com.artsoft.stock.constant.GeneralEnumeration.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
