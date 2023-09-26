@@ -10,6 +10,7 @@ import com.artsoft.stock.repository.ShareRepository;
 import com.artsoft.stock.repository.TraderRepository;
 import com.artsoft.stock.request.ShareOrderRequest;
 import com.artsoft.stock.constant.GeneralEnumeration.*;
+import com.artsoft.stock.util.PriceStepContext;
 import com.artsoft.stock.util.RandomData;
 import com.artsoft.stock.util.TraderBehavior;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.Random;
 
 @Slf4j
 @Service
@@ -28,23 +30,21 @@ import java.time.LocalDateTime;
 public class ShareOrderService extends BaseService{
 
     private final TraderRepository traderRepository;
-    private final ShareRepository shareRepository;
     private final ShareOrderRepository shareOrderRepository;
     private final StockMarketService stockMarketService;
     private final TraderService traderService;
+    private Random random = new Random();
 
     @Transactional
     public void createShareOrderOpenSession(Share share, Long traderId) throws InterruptedException {
-        Thread.sleep(100);
         Trader trader = traderRepository.findById(traderId).get();
         ShareOrder shareOrder = new ShareOrder();
         shareOrder.setTrader(trader);
         shareOrder.setCreateTime(Timestamp.valueOf(LocalDateTime.now()));
-        shareOrder.setPrice(RandomData.randomShareOrderPrice(share.getMinPrice(), share.getMaxPrice()));
-        //shareOrder.setShareOrderStatus(RandomData.shareOrderStatus().name());
+        shareOrder.setPrice(traderService.selectPrice());
         traderService.setTraderBehavior(trader, share, shareOrder);
         //Açılış seansı olduğu için
-        shareOrder.setShareOrderType(ShareOrderType.LIMIT.name()); //shareOrder.setShareOrderType(RandomData.shareOrderType().toString());
+        shareOrder.setShareOrderType(ShareOrderType.LIMIT.name());
         if (trader.getTraderBehavior().equals(TraderBehavior.BUYER.name())){
             if (trader.getBalance().compareTo(share.getPriceStep().getPrice()) < 0){
                 log.info("Yetersiz bakiye...");
@@ -70,14 +70,12 @@ public class ShareOrderService extends BaseService{
 
     @Transactional
     public void createShareOrder(Share share, Long traderId) throws InterruptedException {
-        Thread.sleep(1000);
         Trader trader = traderRepository.findById(traderId).get();
 
         ShareOrder shareOrder = new ShareOrder();
         shareOrder.setTrader(trader);
         shareOrder.setCreateTime(Timestamp.valueOf(LocalDateTime.now()));
-        shareOrder.setPrice(RandomData.randomShareOrderPrice(share.getMinPrice(), share.getMaxPrice()));
-        //shareOrder.setShareOrderStatus(RandomData.shareOrderStatus().name());
+        shareOrder.setPrice(traderService.selectPrice());
         traderService.setTraderBehavior(trader, share, shareOrder);
         shareOrder.setShareOrderType(RandomData.shareOrderType().name());
 
@@ -181,4 +179,6 @@ public class ShareOrderService extends BaseService{
     public void delete(ShareOrder shareOrder){
         shareOrderRepository.delete(shareOrder);
     }
+
+
 }

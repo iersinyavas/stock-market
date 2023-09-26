@@ -73,12 +73,17 @@ spring:
       enabled: false
     initialize-schema: ALWAYS
 
-
+#scheduler:
+#  cron:
+#    share:
+#      enabled: true
+#      expression: 0 1 0 * * ?
 
 share:
   shareId:
 
 traderId: 26601
+
 
 
 

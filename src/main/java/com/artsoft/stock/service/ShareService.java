@@ -1,26 +1,29 @@
 package com.artsoft.stock.service;
 
-import com.artsoft.stock.dto.ShareDTO;
+import com.artsoft.stock.entity.Investment;
 import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.repository.ShareRepository;
 import com.artsoft.stock.util.BatchUtil;
 import com.artsoft.stock.util.PriceStep;
+import com.artsoft.stock.util.PriceStepContext;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ShareService {
 
     private final ShareRepository shareRepository;
-    private final BatchUtil batchUtil;
+    private Random random = new Random();
 
     public void save(Share share){
         shareRepository.save(share);
@@ -31,14 +34,36 @@ public class ShareService {
     }
 
     public Share init(Share share){
-        BigDecimal price = share.getPrice();
         Map<BigDecimal, BlockingQueue> priceMap = new HashMap<>();
-        BigDecimal maxPrice = price.add(price.divide(BigDecimal.valueOf(10), 2, RoundingMode.FLOOR));
-        BigDecimal minPrice = price.subtract(price.divide(BigDecimal.valueOf(10), 2, RoundingMode.FLOOR));
-        PriceStep priceStep = new PriceStep(price, minPrice, maxPrice);
+        PriceStep priceStep = new PriceStep(share.getPrice(), share.getMinPrice(), share.getMaxPrice());
         priceStep.initUpPrice(priceMap);
         priceStep.initDownPrice(priceMap);
+        List<BigDecimal> collect = PriceStepContext.priceStepList.stream().distinct().collect(Collectors.toList());
+        Collections.sort(collect, Collections.reverseOrder());
+        PriceStepContext.priceStepList = collect;
         share.setPriceStep(priceStep);
         return share;
     }
+
+    @Transactional
+    public void dailyAccounting(Share share){
+        share = shareRepository.findByCode(share.getCode());
+        List<Investment> investmentList = share.getInvestmentList();
+
+        if (!investmentList.isEmpty()){
+            investmentList.stream().forEach(investment -> {
+                investment.setPastDayInvestment(investment.getPastDayInvestment().add(BigDecimal.ONE));
+                BigDecimal divide = BigDecimal.valueOf(investment.getReturnInvestmentRatio()).divide(BigDecimal.valueOf(100), 2, RoundingMode.FLOOR).multiply(investment.getInvestmentAmount());
+                investment.setReturnInvestment(divide.multiply(BigDecimal.valueOf(random.nextInt(investment.getReturnInvestmentRatio().intValue())).add(BigDecimal.ONE))
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.FLOOR));
+            });
+            BigDecimal totalReturnInvestment = investmentList.stream().map(Investment::getReturnInvestment).reduce(BigDecimal.ZERO, BigDecimal::add);
+            share.setProfit(share.getProfit().add(totalReturnInvestment));
+            share.setOwnResources(share.getProfit().add(share.getFund()));
+            share.setMarketValue(share.getPrice().multiply(share.getCurrentLot()));
+            share.setMarketBookRatio(share.getMarketValue().divide(share.getOwnResources(), 2, RoundingMode.FLOOR));
+            shareRepository.save(share);
+        }
+    }
+
 }

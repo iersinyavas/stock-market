@@ -49,9 +49,10 @@ public class StockMarketService {
         // Zaten buy için max fiyatta sell kuyruğu devreye girecek
         // sell için min fiyatta buy kuyruğu devreye girer yarım kalan market orderlarda
 
-        MarketOperation marketOperation = factory.getOperationService(ShareOrderStatus.BUY.name());
+
         if (Objects.nonNull(shareOrderQueue)){
             ShareOrder shareOrder = shareOrderQueue.peek();
+            MarketOperation marketOperation = factory.getOperationService(shareOrder.getShareOrderStatus());
             if (marketOperation.execute(share, shareOrderQueue, shareOrder)) return;
         }
 

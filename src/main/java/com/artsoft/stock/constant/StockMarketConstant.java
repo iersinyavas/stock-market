@@ -1,4 +1,4 @@
-package com.artsoft.stock.util;
+package com.artsoft.stock.constant;
 
 public class StockMarketConstant {
 

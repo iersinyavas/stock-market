@@ -34,7 +34,7 @@ public class TreaderCreator extends Thread {
                     Thread.sleep(random.nextInt(10));
                     Share share = shareRepository.findById(batchUtil.getShareId()).get();
                     if (share.getLot().compareTo(BigDecimal.ZERO) != 0){
-                        traderService.createTrader(share);
+                      //  traderService.createTrader(share);
                     }else {
                         shareOrderCreator.openLock();
                         lock.wait();

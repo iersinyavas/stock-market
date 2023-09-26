@@ -29,8 +29,14 @@ public class AddMoneyBalanceTasklet implements Tasklet {
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws InterruptedException {
         List<Trader> traderList = traderService.getTraderList();
         for (Trader trader : traderList) {
-            BigDecimal returnInvestment = trader.getBalance().divide(BigDecimal.valueOf(10000), RoundingMode.FLOOR).multiply(BigDecimal.valueOf(random.nextInt(1000)+1));
-            trader.setBalance(trader.getBalance().add(returnInvestment));
+            BigDecimal divide = trader.getReturnInvestmentRatio().divide(BigDecimal.valueOf(100), 2, RoundingMode.FLOOR).multiply(trader.getBalance());
+            BigDecimal returnInvestment = divide.multiply(BigDecimal.valueOf(random.nextInt(trader.getReturnInvestmentRatio().intValue())).add(BigDecimal.ONE))
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.FLOOR);
+            BigDecimal income = trader.getBalance().multiply(BigDecimal.valueOf(random.nextInt(100)+1)).divide(BigDecimal.valueOf(100), 2, RoundingMode.FLOOR);
+            BigDecimal expenses = trader.getBalance().multiply(BigDecimal.valueOf(random.nextInt(100)+1)).divide(BigDecimal.valueOf(100), 2, RoundingMode.FLOOR);
+            BigDecimal total = income.subtract(expenses);
+            total = total.add(returnInvestment);
+            trader.setBalance(trader.getBalance().add(total));
             traderService.save(trader);
         }
         return RepeatStatus.FINISHED;

@@ -80,7 +80,7 @@ public class OperationService {
 
         Trader traderBuy = traderRepository.findById(buy.getTrader().getTraderId()).get();
         traderBuy.setHaveLot(traderBuy.getHaveLot().add(buy.getLot()));
-        traderBuy.setCost(shareOrderUtil.costCalculate(traderBuy, buy)); //cost hesabını gözden geçir yanlış hesaplıyor
+        //traderBuy.setCost(shareOrderUtil.costCalculate(traderBuy, buy)); //cost hesabını gözden geçir yanlış hesaplıyor
         traderBuy.setCurrentHaveLot(traderBuy.getCurrentHaveLot().add(buy.getLot()));
         traderRepository.save(traderBuy);
         this.swapProcess(sell, buy, swapProcess, traderSell, traderBuy);
@@ -102,7 +102,7 @@ public class OperationService {
 
         Trader traderBuy = traderRepository.findById(buy.getTrader().getTraderId()).get();
         traderBuy.setHaveLot(traderBuy.getHaveLot().add(sell.getLot()));
-        traderBuy.setCost(shareOrderUtil.costCalculate(traderBuy, buy)); //cost hesabını gözden geçir yanlış hesaplıyor
+        //traderBuy.setCost(shareOrderUtil.costCalculate(traderBuy, buy)); //cost hesabını gözden geçir yanlış hesaplıyor
         traderBuy.setCurrentHaveLot(traderBuy.getCurrentHaveLot().add(sell.getLot()));
         traderRepository.save(traderBuy);
         this.swapProcess(sell, buy, swapProcess, traderSell, traderBuy);
@@ -125,7 +125,7 @@ public class OperationService {
         SwapProcessDTO swapProcessDTO = SwapProcessMapper.INSTANCE.entityToDTO(swapProcess);
 
         candleStickService.saveAndSendSwapProcess(swapProcess, swapProcessDTO, null);
-        log.info("Gerçekleşen işlem : Alan :{} - Satan :{}", buy.getTrader().getName(), sell.getTrader().getName());
+        log.info("Gerçekleşen işlem : Alan :{} - Satan :{} Hisse Adedi: {} Hacim: {} İşlem Fiyatı: {}", buy.getTrader().getName(), sell.getTrader().getName(), swapProcessDTO.getLot(), swapProcessDTO.getVolume(), swapProcessDTO.getPrice());
     }
 
 
@@ -151,6 +151,8 @@ public class OperationService {
         } else {
             share.setPriceStep(share.getPriceStep().priceDown(share.getPriceStep()));
         }
+        share.setMarketValue(share.getPrice().multiply(share.getCurrentLot()));
+        share.setMarketBookRatio(share.getMarketValue().divide(share.getOwnResources(), 2, RoundingMode.FLOOR));
         candleStickService.saveAndSendSwapProcess(null, null, share);
     }
 }

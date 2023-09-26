@@ -4,7 +4,7 @@ import com.artsoft.stock.base.BaseBatchConfiguration;
 import com.artsoft.stock.batch.step.*;
 import com.artsoft.stock.context.StockMarketBatchContext;
 import com.artsoft.stock.listener.StockMarketJobListener;
-import com.artsoft.stock.util.StockMarketConstant;
+import com.artsoft.stock.constant.StockMarketConstant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -13,8 +13,6 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.SimpleJobBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +26,7 @@ public class StockMarketCloseJobConfiguration extends BaseBatchConfiguration {
     private final ShareOrderRollbackStep shareOrderRollbackStep;
     private final DeleteTraderStep deleteTraderStep;
     private final AddMoneyBalanceStep addMoneyBalanceStep;
+    private final DailyAccountingStep dailyAccountingStep;
 
     @Override
     @Bean(name= StockMarketConstant.STOCK_MARKET_CLOSE)
@@ -39,6 +38,7 @@ public class StockMarketCloseJobConfiguration extends BaseBatchConfiguration {
         stepList.add(updateSharePriceStep.jobStep());
         stepList.add(deleteTraderStep.jobStep());
         stepList.add(addMoneyBalanceStep.jobStep());
+        stepList.add(dailyAccountingStep.jobStep());
         //Maaş eklemesi stepinide ekle
         SimpleJobBuilder simpleJobBuilder = super.createSimpleJobBuilder(StockMarketConstant.STOCK_MARKET_CLOSE, stepList);
         return simpleJobBuilder.listener(new StockMarketJobListener(this.initContext())).build();

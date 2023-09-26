@@ -5,10 +5,11 @@ import lombok.Data;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @Entity
-//@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "shareOrder"}) // İlişkili tablolarda json oluştururken iç içe sonsuz döngüye girmemesi için
+//@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "shareOrder"}) // İlişkili tablolarda json oluştururken iç içe sonsuz döngüye girmemesi için ve olmayan fieldalara mapleme yapmasını engellemek için
 @Table(name = "trader", schema = "stock_market")
 public class Trader implements Serializable {
 
@@ -24,8 +25,8 @@ public class Trader implements Serializable {
     @Column(name = "balance")
     private BigDecimal balance;
 
-    @Column(name = "cost")
-    private BigDecimal cost;
+    @Column(name = "return_investment_ratio")
+    private BigDecimal returnInvestmentRatio;
 
     @Column(name = "have_lot")
     private BigDecimal haveLot;
@@ -41,4 +42,11 @@ public class Trader implements Serializable {
 
     @Column(name = "prince_range_small")
     private BigDecimal princeRangeSmall;
+
+    /*@ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.REMOVE, CascadeType.REMOVE})
+    @JoinTable(name = "trader_share_ownership",
+            joinColumns = @JoinColumn(name = "trader_id", referencedColumnName = "trader_id"),
+            inverseJoinColumns = @JoinColumn(name = "share_ownership_id", referencedColumnName = "id")
+    )
+    private List<ShareOwnership> shareOwnershipList;*/
 }

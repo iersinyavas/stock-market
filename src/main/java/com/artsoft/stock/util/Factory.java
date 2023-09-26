@@ -1,11 +1,9 @@
 package com.artsoft.stock.util;
 
 import com.artsoft.stock.StockApplication;
-import com.artsoft.stock.service.BuyService;
-import com.artsoft.stock.service.LimitOperation;
-import com.artsoft.stock.service.MarketOperation;
+import com.artsoft.stock.constant.BeanName;
+import com.artsoft.stock.service.*;
 import com.artsoft.stock.constant.GeneralEnumeration.*;
-import com.artsoft.stock.service.SellService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +17,7 @@ public class Factory {
 
     private final BuyService buyService;
     private final SellService sellService;
+
     private Map<String, MarketOperation> operationServiceMap = new HashMap<>();
     @PostConstruct
     private void init(){
@@ -31,6 +30,10 @@ public class Factory {
     }
 
     public LimitOperation getLimitOperation(){
-        return (LimitOperation) StockApplication.applicationContext.getBean(BeanName.LIMIT_SHARE_ORDER_SERVICE.getValue());
+        return (LimitOperation) StockApplication.applicationContext.getBean(BeanName.LIMIT_SHARE_ORDER_SERVICE);
+    }
+
+    public Payable getPayable(String fundIncrease){
+        return (Payable) StockApplication.applicationContext.getBean(fundIncrease);
     }
 }

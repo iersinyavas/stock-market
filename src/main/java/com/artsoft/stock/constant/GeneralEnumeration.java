@@ -43,17 +43,4 @@ public class GeneralEnumeration {
         BUY_LIMIT, BUY_MARKET, SELL_LIMIT, SELL_MARKET
     }
 
-    @Getter
-    public enum BeanName{
-        BUY_SERVICE("buyService"),
-        SELL_SERVICE("sellService"),
-        LIMIT_SHARE_ORDER_SERVICE("limitShareOrderService");
-
-        private final String value;
-
-        BeanName(String value) {
-            this.value = value;
-        }
-    }
-
 }

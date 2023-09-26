@@ -1,21 +1,16 @@
 package com.artsoft.stock.controller;
 
-import com.artsoft.stock.StockApplication;
 import com.artsoft.stock.request.StockMarketRequest;
 import com.artsoft.stock.response.BaseResponse;
 import com.artsoft.stock.service.ShareService;
 import com.artsoft.stock.util.BatchJobLauncher;
 import com.artsoft.stock.util.BatchUtil;
-import com.artsoft.stock.util.StockMarketConstant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.JobParametersInvalidException;
-import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRestartException;
-import org.springframework.context.ApplicationContext;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import javax.ws.rs.core.MediaType;

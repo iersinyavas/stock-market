@@ -36,20 +36,49 @@ public class PriceStep {
 
     public PriceStep initUpPrice(Map<BigDecimal, BlockingQueue> priceMap){
         if (this.getPrice().compareTo(this.getMaxPrice()) < 0){
-            this.setPriceStepUp(new PriceStep(this.getPrice().add(BigDecimal.valueOf(0.01)), this.getMinPrice(), this.getMaxPrice()).initUpPrice(priceMap));
+            BigDecimal upStep = this.priceControlForUpStep(this.getPrice());
+            this.setPriceStepUp(new PriceStep(this.getPrice().add(upStep), this.getMinPrice(), this.getMaxPrice()).initUpPrice(priceMap));
             this.getPriceStepUp().setPriceStepDown(this);
+
         }
+        PriceStepContext.priceStepList.add(this.getPrice());
         log.info("Fiyat: {} Adres: {} Sonraki nesne: {}", this.getPrice(), this, this.getPriceStepUp());
         return this;
     }
 
     public PriceStep initDownPrice(Map<BigDecimal, BlockingQueue> priceMap){
         if (this.getPrice().compareTo(this.getMinPrice()) > 0){
-            this.setPriceStepDown(new PriceStep(this.getPrice().subtract(BigDecimal.valueOf(0.01)), this.getMinPrice(), this.getMaxPrice()).initDownPrice(priceMap));
+            BigDecimal downStep = this.priceControlForDownStep(this.getPrice());
+            this.setPriceStepDown(new PriceStep(this.getPrice().subtract(downStep), this.getMinPrice(), this.getMaxPrice()).initDownPrice(priceMap));
             this.getPriceStepDown().setPriceStepUp(this);
         }
         log.info("Fiyat: {} Adres: {} Önceki nesne: {}", this.getPrice(), this, this.getPriceStepDown());
+        PriceStepContext.priceStepList.add(this.getPrice());
         return this;
+    }
+
+    private BigDecimal priceControlForUpStep(BigDecimal price){
+        if(price.compareTo(BigDecimal.valueOf(20)) < 0){
+            return BigDecimal.valueOf(0.01);
+        }else if (price.compareTo(BigDecimal.valueOf(50)) < 0) {
+            return BigDecimal.valueOf(0.02);
+        }else if (price.compareTo(BigDecimal.valueOf(100)) < 0) {
+            return BigDecimal.valueOf(0.05);
+        }else {
+            return BigDecimal.valueOf(0.1);
+        }
+    }
+
+    private BigDecimal priceControlForDownStep(BigDecimal price){
+        if(price.compareTo(BigDecimal.valueOf(20)) <= 0){
+            return BigDecimal.valueOf(0.01);
+        }else if (price.compareTo(BigDecimal.valueOf(50)) <= 0) {
+            return BigDecimal.valueOf(0.02);
+        }else if (price.compareTo(BigDecimal.valueOf(100)) <= 0) {
+            return BigDecimal.valueOf(0.05);
+        }else {
+            return BigDecimal.valueOf(0.1);
+        }
     }
 
     public PriceStep priceUp(PriceStep priceStep){

@@ -6,6 +6,7 @@ import lombok.Data;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @Entity
@@ -41,6 +42,32 @@ public class Share implements Serializable {
 
     @Column(name = "profit")
     private BigDecimal profit;
+
+    @Column(name = "own_resources")
+    private BigDecimal ownResources;
+
+    @Column(name = "total_investment_amount")
+    private BigDecimal totalInvestmentAmount;
+
+    @Column(name = "market_value")
+    private BigDecimal marketValue;
+
+    @Column(name = "market_book_ratio")
+    private BigDecimal marketBookRatio;
+
+    @Column(name = "price_income_ratio")
+    private BigDecimal priceIncomeRatio;
+
+    @ManyToOne
+    @JoinColumn(name = "fund_increase", referencedColumnName = "id")
+    private FundIncrease fundIncrease;
+
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinTable(name = "share_investment",
+            joinColumns = @JoinColumn(name = "share_id", referencedColumnName = "share_id"),
+            inverseJoinColumns = @JoinColumn(name = "investment_id", referencedColumnName = "id")
+    )
+    private List<Investment> investmentList;
 
     private transient PriceStep priceStep;
 

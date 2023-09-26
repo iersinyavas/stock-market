@@ -8,6 +8,7 @@ import com.artsoft.stock.util.BatchUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Random;
 
@@ -26,21 +27,19 @@ public class ShareOrderCreator extends Thread {
     @Override
     public void run() {
         try {
+            Boolean createTrader = Boolean.TRUE;
             Share share = batchUtil.getShare();
-            List<Long> doProcessTraderList = traderService.getTraderList(share.getPriceStep().getPrice());
             while (true){
-                Thread.sleep(new Random().nextInt(1000));
+                Thread.sleep(new Random().nextInt(500));
                 synchronized (lock) {
                     List<Long> traderIdList = traderService.getAllTraderIdList();
                     Long traderId = traderIdList.get(random.nextInt(traderIdList.size()));
-                    if (!doProcessTraderList.contains(traderId) && (random.nextInt(10) == random.nextInt(10))){
+                    if (share.getMarketBookRatio().compareTo(BigDecimal.ONE) < 0 && createTrader){
                         Trader trader = traderService.createNewTrader(share);
                         trader = traderService.save(trader);
                         traderId = trader.getTraderId();
+                        createTrader = Boolean.FALSE;
                     }
-                    /*if (doProcessTraderList.contains(traderId)){
-                        shareOrderService.createShareOrder(share, traderId);
-                    }*/
                     shareOrderService.createShareOrder(share, traderId);
 
                     shareOrderMatcher.openLock();
