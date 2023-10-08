@@ -43,6 +43,12 @@ public class Share implements Serializable {
     @Column(name = "profit")
     private BigDecimal profit;
 
+    @Column(name = "past_profit")
+    private BigDecimal pastProfit;
+
+    @Column(name = "last_net_profit")
+    private BigDecimal lastNetProfit;
+
     @Column(name = "own_resources")
     private BigDecimal ownResources;
 
@@ -52,11 +58,17 @@ public class Share implements Serializable {
     @Column(name = "market_value")
     private BigDecimal marketValue;
 
-    @Column(name = "market_book_ratio")
+    @Column(name = "pd_dd")
     private BigDecimal marketBookRatio;
 
-    @Column(name = "price_income_ratio")
+    @Column(name = "f_k")
     private BigDecimal priceIncomeRatio;
+
+    @Column(name = "return_investment_average")
+    private BigDecimal returnInvestmentAverage;
+
+    @Column(name = "remaining_balance_day")
+    private Integer remainingBalanceDay;
 
     @ManyToOne
     @JoinColumn(name = "fund_increase", referencedColumnName = "id")

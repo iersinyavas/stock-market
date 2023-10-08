@@ -73,14 +73,15 @@ spring:
       enabled: false
     initialize-schema: ALWAYS
 
-#scheduler:
-#  cron:
-#    share:
-#      enabled: true
-#      expression: 0 1 0 * * ?
+scheduler:
+  cron:
+    share:
+      enabled: true
+      expression: 0 0/2 * * * ?
 
 share:
   shareId:
+  remaining-balance-day: 10
 
 traderId: 26601
 

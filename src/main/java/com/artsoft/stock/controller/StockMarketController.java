@@ -3,6 +3,7 @@ package com.artsoft.stock.controller;
 import com.artsoft.stock.request.StockMarketRequest;
 import com.artsoft.stock.response.BaseResponse;
 import com.artsoft.stock.service.ShareService;
+import com.artsoft.stock.service.broker.StockMarketService;
 import com.artsoft.stock.util.BatchJobLauncher;
 import com.artsoft.stock.util.BatchUtil;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class StockMarketController {
     private final BatchJobLauncher batchJobLauncher;
     private final BatchUtil batchUtil;
     private final ShareService shareService;
+    private final StockMarketService stockMarketService;
 
 
     @GetMapping(value = "/start-stock-market", produces = MediaType.APPLICATION_JSON)
@@ -45,4 +47,5 @@ public class StockMarketController {
         batchJobLauncher.launch(stockMarketRequest);
         return ResponseEntity.ok(new BaseResponse<>(Boolean.TRUE));
     }
+
 }

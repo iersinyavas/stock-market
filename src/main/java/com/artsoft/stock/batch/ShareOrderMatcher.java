@@ -2,14 +2,11 @@ package com.artsoft.stock.batch;
 
 import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.exception.InsufficientBalanceException;
-import com.artsoft.stock.service.StockMarketService;
+import com.artsoft.stock.service.broker.StockMarketService;
 import com.artsoft.stock.util.BatchUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import java.util.Random;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 @Component
 @RequiredArgsConstructor
@@ -18,9 +15,7 @@ public class ShareOrderMatcher extends Thread {
     private final StockMarketService stockMarketService;
     private final BatchUtil batchUtil;
 
-    /*private Lock lock = new ReentrantLock();
-    private Condition condition = lock.newCondition();*/
-
+    public static boolean firstWork = true;
     public Object lock = new Object();
     private Random random = new Random();
 

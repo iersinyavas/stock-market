@@ -29,6 +29,12 @@ public class Investment {
     @Column(name = "return_investment")
     private BigDecimal returnInvestment;
 
+    @Column(name = "expenses")
+    private BigDecimal expenses;
+
+    @Column(name = "expenses_ratio")
+    private Integer expensesRatio;
+
     @Column(name = "past_day_investment")
     private BigDecimal pastDayInvestment;
 

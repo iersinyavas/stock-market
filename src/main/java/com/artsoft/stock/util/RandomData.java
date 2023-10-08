@@ -27,7 +27,7 @@ public class RandomData {
     public static BigDecimal randomShareOrderPrice(BigDecimal minPrice, BigDecimal maxPrice){
         minPrice = minPrice.multiply(BigDecimal.valueOf(100));
         maxPrice = maxPrice.multiply(BigDecimal.valueOf(100)).add(BigDecimal.ONE);
-        return minPrice.add(BigDecimal.valueOf(random.nextInt(maxPrice.subtract(minPrice).intValue()))).divide(BigDecimal.valueOf(100));
+        return minPrice.add(BigDecimal.valueOf(random.nextInt(maxPrice.subtract(minPrice).abs().intValue()))).divide(BigDecimal.valueOf(100));
     }
 
     public static ShareOrderType shareOrderType(){

@@ -34,7 +34,6 @@ public class UpdateSharePriceTasklet implements Tasklet {
         remainder = minPrice.remainder(PriceStepUtil.priceControlForStep(minPrice));
         share.setMinPrice(minPrice.add(PriceStepUtil.priceControlForStep(minPrice).subtract(remainder)));
         shareService.save(share);
-        log.info("Oturum sonlandı...");
         return RepeatStatus.FINISHED;
     }
 

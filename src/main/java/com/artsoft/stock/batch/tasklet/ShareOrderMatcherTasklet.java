@@ -1,6 +1,5 @@
 package com.artsoft.stock.batch.tasklet;
 
-import com.artsoft.stock.batch.ShareOrderCreator;
 import com.artsoft.stock.batch.ShareOrderMatcher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.StepContribution;
@@ -17,7 +16,12 @@ public class ShareOrderMatcherTasklet implements Tasklet {
 
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws InterruptedException {
-        shareOrderMatcher.start();
+        if (ShareOrderMatcher.firstWork){
+            ShareOrderMatcher.firstWork = false;
+            shareOrderMatcher.start();
+        }else {
+            shareOrderMatcher.openLock();
+        }
         return RepeatStatus.FINISHED;
     }
 

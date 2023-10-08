@@ -22,7 +22,7 @@ public class FreeFundIncreaseService implements Payable {
         if (share.getCurrentLot().compareTo(BigDecimal.ZERO) > 0 && share.getLot().compareTo(BigDecimal.ZERO) > 0){
             BigDecimal freeFundRatio = share.getLot().divide(share.getCurrentLot(), 2, RoundingMode.FLOOR);
             List<Trader> freeFundTraderList = traderRepository.getTraderListByCurrentHaveLot();
-            if (share.getLot().compareTo(share.getProfit()) <= 0){
+            if (share.getFund().multiply(freeFundRatio).compareTo(share.getPastProfit()) <= 0){
                 freeFundTraderList.stream().forEach(trader -> {
                     trader.setCurrentHaveLot(trader.getCurrentHaveLot().add(trader.getCurrentHaveLot().multiply(freeFundRatio)));
                     trader.setHaveLot(trader.getCurrentHaveLot());
@@ -33,7 +33,7 @@ public class FreeFundIncreaseService implements Payable {
                 share.setMaxPrice(share.getPrice().add(share.getPrice().divide(BigDecimal.TEN, RoundingMode.FLOOR)));
                 share.setMinPrice(share.getPrice().subtract(share.getPrice().divide(BigDecimal.TEN, RoundingMode.FLOOR)));
                 share.setCurrentLot(share.getCurrentLot().add(share.getLot()));
-                share.setProfit(share.getProfit().subtract(share.getFund().multiply(freeFundRatio)));
+                share.setPastProfit(share.getPastProfit().subtract(share.getFund().multiply(freeFundRatio)));
                 share.setFund(share.getFund().add(share.getFund().multiply(freeFundRatio)));
                 share.setLot(BigDecimal.ZERO);
                 shareRepository.save(share);

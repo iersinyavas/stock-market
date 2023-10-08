@@ -16,7 +16,14 @@ public class ShareOrderCreateTasklet implements Tasklet {
 
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws InterruptedException {
-        shareOrderCreator.start();
+        if (ShareOrderCreator.firstWork){
+            ShareOrderCreator.firstWork = false;
+            shareOrderCreator.start();
+        }else {
+            ShareOrderCreator.passive = false;
+            shareOrderCreator.openLock();
+        }
+
         return RepeatStatus.FINISHED;
     }
 

@@ -143,7 +143,7 @@ public class OperationService {
         traderRepository.save(traderSell);
     }
 
-    protected void setPrice(Share share, BlockingQueue<ShareOrder> limitSellShareOrderQueue, BlockingQueue<ShareOrder> limitBuyShareOrderQueue) {
+    public void setPrice(Share share, BlockingQueue<ShareOrder> limitSellShareOrderQueue, BlockingQueue<ShareOrder> limitBuyShareOrderQueue) {
         if (limitSellShareOrderQueue.isEmpty() && limitBuyShareOrderQueue.isEmpty()){
             share.setPriceStep(share.getPriceStep().priceDown(share.getPriceStep()));
         } else if (limitSellShareOrderQueue.isEmpty()){

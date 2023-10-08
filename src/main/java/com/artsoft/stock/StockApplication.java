@@ -1,5 +1,6 @@
 package com.artsoft.stock;
 
+import com.artsoft.stock.service.broker.StockMarketService;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -22,9 +23,7 @@ import java.util.Random;
 @EnableScheduling
 @EnableSwagger2
 //@OpenAPIDefinition(servers = {@Server(url = "/", description = "Default Server URL")})
-public class StockApplication /*implements CommandLineRunner */{
-
-    private Random random;
+public class StockApplication {
     @Autowired
     public static ApplicationContext applicationContext;
     public static void main(String[] args) {

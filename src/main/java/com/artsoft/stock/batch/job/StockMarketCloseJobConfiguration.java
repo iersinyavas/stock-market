@@ -5,6 +5,7 @@ import com.artsoft.stock.batch.step.*;
 import com.artsoft.stock.context.StockMarketBatchContext;
 import com.artsoft.stock.listener.StockMarketJobListener;
 import com.artsoft.stock.constant.StockMarketConstant;
+import com.artsoft.stock.util.PriceStepContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -36,9 +37,11 @@ public class StockMarketCloseJobConfiguration extends BaseBatchConfiguration {
         stepList.add(shareOrderThreadStopStep.jobStep());
         stepList.add(shareOrderRollbackStep.jobStep());
         stepList.add(updateSharePriceStep.jobStep());
-        stepList.add(deleteTraderStep.jobStep());
+       // stepList.add(deleteTraderStep.jobStep());
         stepList.add(addMoneyBalanceStep.jobStep());
         stepList.add(dailyAccountingStep.jobStep());
+
+
         //Maaş eklemesi stepinide ekle
         SimpleJobBuilder simpleJobBuilder = super.createSimpleJobBuilder(StockMarketConstant.STOCK_MARKET_CLOSE, stepList);
         return simpleJobBuilder.listener(new StockMarketJobListener(this.initContext())).build();

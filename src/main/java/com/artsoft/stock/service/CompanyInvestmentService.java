@@ -3,6 +3,7 @@ package com.artsoft.stock.service;
 import com.artsoft.stock.entity.Investment;
 import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.repository.ShareRepository;
+import com.artsoft.stock.util.BatchUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import java.util.Random;
 public class CompanyInvestmentService implements Payable {
 
     private final ShareRepository shareRepository;
+    private final BatchUtil batchUtil;
     private Random random = new Random();
     @Override
     public void execute(Share share) {
@@ -33,7 +35,13 @@ public class CompanyInvestmentService implements Payable {
         BigDecimal divide = BigDecimal.valueOf(investment.getReturnInvestmentRatio()).divide(BigDecimal.valueOf(100), 2, RoundingMode.FLOOR).multiply(investmentAmount);
         investment.setReturnInvestment(divide.multiply(BigDecimal.valueOf(random.nextInt(investment.getReturnInvestmentRatio().intValue())).add(BigDecimal.ONE))
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.FLOOR));
+        investment.setExpensesRatio(random.nextInt(investment.getReturnInvestmentRatio())+1);
+
+        int sum = investmentList.stream().mapToInt(Investment::getReturnInvestmentRatio).sum();
+        BigDecimal returnInvestmentAverage = BigDecimal.valueOf(sum).divide(BigDecimal.valueOf(investmentList.size()), 2, RoundingMode.FLOOR);
+        share.setReturnInvestmentAverage(returnInvestmentAverage);
         shareRepository.save(share);
+        batchUtil.setShare(share);
         log.info("{} şirketi {} liralık yatırım yaptı.", share.getCode(), investmentAmount);
     }
 

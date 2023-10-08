@@ -8,6 +8,7 @@ import com.artsoft.stock.util.PriceStep;
 import com.artsoft.stock.util.PriceStepContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,9 @@ public class ShareService {
 
     private final ShareRepository shareRepository;
     private Random random = new Random();
+
+    @Value("${share.remaining-balance-day}")
+    private Integer remainingBalanceDay;
 
     public void save(Share share){
         shareRepository.save(share);
@@ -54,16 +58,37 @@ public class ShareService {
             investmentList.stream().forEach(investment -> {
                 investment.setPastDayInvestment(investment.getPastDayInvestment().add(BigDecimal.ONE));
                 BigDecimal divide = BigDecimal.valueOf(investment.getReturnInvestmentRatio()).divide(BigDecimal.valueOf(100), 2, RoundingMode.FLOOR).multiply(investment.getInvestmentAmount());
-                investment.setReturnInvestment(divide.multiply(BigDecimal.valueOf(random.nextInt(investment.getReturnInvestmentRatio().intValue())).add(BigDecimal.ONE))
+                investment.setReturnInvestment(divide.multiply(BigDecimal.valueOf(random.nextInt(investment.getReturnInvestmentRatio())).add(BigDecimal.ONE))
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.FLOOR));
+
+                investment.setExpenses(divide.multiply(BigDecimal.valueOf(random.nextInt(investment.getExpensesRatio())).add(BigDecimal.ONE))
                         .divide(BigDecimal.valueOf(100), 2, RoundingMode.FLOOR));
             });
             BigDecimal totalReturnInvestment = investmentList.stream().map(Investment::getReturnInvestment).reduce(BigDecimal.ZERO, BigDecimal::add);
-            share.setProfit(share.getProfit().add(totalReturnInvestment));
-            share.setOwnResources(share.getProfit().add(share.getFund()));
-            share.setMarketValue(share.getPrice().multiply(share.getCurrentLot()));
-            share.setMarketBookRatio(share.getMarketValue().divide(share.getOwnResources(), 2, RoundingMode.FLOOR));
-            shareRepository.save(share);
+            BigDecimal totalExpenses = investmentList.stream().map(Investment::getExpenses).reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal difference = totalReturnInvestment.subtract(totalExpenses);
+            share.setProfit(share.getProfit().add(difference));
         }
+
+        share.setPriceIncomeRatio(share.getPrice().divide(share.getLastNetProfit().divide(share.getFund(), 2, RoundingMode.FLOOR), 2, RoundingMode.FLOOR));
+        share.setRemainingBalanceDay(share.getRemainingBalanceDay()-1);
+
+        if (share.getRemainingBalanceDay().compareTo(0) == 0){
+            share.setLastNetProfit(share.getProfit());
+            share.setPastProfit(share.getPastProfit().add(share.getLastNetProfit()));
+            share.setProfit(BigDecimal.ZERO);
+            share.setOwnResources(share.getPastProfit().add(share.getFund()));
+            share.setRemainingBalanceDay(remainingBalanceDay);
+
+            BigDecimal annualEstimatedProfit = share.getLastNetProfit().multiply(BigDecimal.valueOf(4));
+            share.setPriceIncomeRatio(share.getPrice().divide(annualEstimatedProfit.divide(share.getFund(), 2, RoundingMode.FLOOR), 2, RoundingMode.FLOOR));
+        }
+        
+        share.setMarketValue(share.getPrice().multiply(share.getCurrentLot()));
+        share.setMarketBookRatio(share.getMarketValue().divide(share.getOwnResources(), 2, RoundingMode.FLOOR));
+
+
+        shareRepository.save(share);
     }
 
 }

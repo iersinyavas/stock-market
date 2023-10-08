@@ -36,7 +36,7 @@ public class TreaderCreateTasklet implements Tasklet {
         List<Trader> traderList = new ArrayList<>();
         Share share = batchUtil.getShare();
         if (share.getLot().compareTo(BigDecimal.ZERO) > 0){
-            int quantityTrader = random.nextInt(share.getLot().intValue() + 1);
+            int quantityTrader = 100; //random.nextInt(share.getLot().intValue() + 1);
             int perPersonShareQuantity = share.getLot().divide(BigDecimal.valueOf(quantityTrader), RoundingMode.FLOOR).intValue();
             int remainder = share.getLot().remainder(BigDecimal.valueOf(quantityTrader)).intValue();
             share.setCurrentLot(share.getCurrentLot().add(share.getLot()));

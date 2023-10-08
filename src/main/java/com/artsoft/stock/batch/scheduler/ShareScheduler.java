@@ -1,7 +1,12 @@
 package com.artsoft.stock.batch.scheduler;
 
-/*import lombok.RequiredArgsConstructor;
+import com.artsoft.stock.service.broker.StockMarketService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.JobParametersInvalidException;
+import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -12,8 +17,11 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(value = "scheduler.cron.share.enabled", matchIfMissing = true)
 public class ShareScheduler {
 
+    private final StockMarketService stockMarketService;
     @Scheduled(cron = "${scheduler.cron.share.expression}")
-    public void taskName(){
-
+    public void taskName() throws InterruptedException, JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {
+        stockMarketService.launchStockMarketStart();
+        Thread.sleep(90000);
+        stockMarketService.launchStockMarketStop();
     }
-}*/
+}

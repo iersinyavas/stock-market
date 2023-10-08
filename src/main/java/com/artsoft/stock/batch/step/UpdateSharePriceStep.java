@@ -1,6 +1,5 @@
 package com.artsoft.stock.batch.step;
 
-import com.artsoft.stock.batch.tasklet.TreaderCreateTasklet;
 import com.artsoft.stock.batch.tasklet.UpdateSharePriceTasklet;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Step;

@@ -22,24 +22,23 @@ public class ShareOrderCreator extends Thread {
     private final TraderService traderService;
 
     public Object lock = new Object();
+    public static boolean passive = false;
+    public static boolean firstWork = true;
     private Random random = new Random();
 
     @Override
     public void run() {
         try {
-            Boolean createTrader = Boolean.TRUE;
             Share share = batchUtil.getShare();
             while (true){
+                if (passive){
+                    this.passive();
+                    share = batchUtil.getShare();
+                }
                 Thread.sleep(new Random().nextInt(500));
                 synchronized (lock) {
                     List<Long> traderIdList = traderService.getAllTraderIdList();
                     Long traderId = traderIdList.get(random.nextInt(traderIdList.size()));
-                    if (share.getMarketBookRatio().compareTo(BigDecimal.ONE) < 0 && createTrader){
-                        Trader trader = traderService.createNewTrader(share);
-                        trader = traderService.save(trader);
-                        traderId = trader.getTraderId();
-                        createTrader = Boolean.FALSE;
-                    }
                     shareOrderService.createShareOrder(share, traderId);
 
                     shareOrderMatcher.openLock();
@@ -58,7 +57,13 @@ public class ShareOrderCreator extends Thread {
 
     public void lock() throws InterruptedException {
         synchronized (lock){
-            this.interrupt();
+            passive = true;//this.interrupt();
+        }
+    }
+
+    public void passive() throws InterruptedException {
+        synchronized (lock){
+            lock.wait();
         }
     }
 }

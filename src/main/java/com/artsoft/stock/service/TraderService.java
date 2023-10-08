@@ -51,7 +51,7 @@ public class TraderService {
         trader.setCurrentHaveLot(trader.getHaveLot());
         trader.setReturnInvestmentRatio(BigDecimal.valueOf(random.nextInt(100)+1));
         trader.setTraderBehavior(TraderBehavior.BUYER.name()/*RandomData.traderBehavior().name()*/);
-        trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(share.getPrice(), share.getPrice().multiply(BigDecimal.valueOf(2))));
+        trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(share.getPrice(), this.targetPrice(share)));
         trader.setPrinceRangeSmall(RandomData.randomShareOrderPrice(share.getPrice().divide(BigDecimal.valueOf(2), RoundingMode.FLOOR), share.getPrice()));
 
         share.setLot(share.getLot().subtract(trader.getHaveLot()));
@@ -73,11 +73,21 @@ public class TraderService {
         trader.setCurrentHaveLot(BigDecimal.ZERO);
         trader.setReturnInvestmentRatio(BigDecimal.valueOf(random.nextInt(100)+1));
         trader.setTraderBehavior(TraderBehavior.BUYER.name());
-        trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(share.getPrice(), share.getPrice().multiply(BigDecimal.valueOf(2))));
-        trader.setPrinceRangeSmall(RandomData.randomShareOrderPrice(share.getPrice().divide(BigDecimal.valueOf(2), RoundingMode.FLOOR), share.getPrice()));
+        trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(BigDecimal.ZERO,  this.targetPrice(share)));
+        trader.setPrinceRangeSmall(RandomData.randomShareOrderPrice(BigDecimal.ZERO, share.getPrice()));
 
         log.info("Trader adı : {}", trader.getName());
         return trader;
+    }
+
+    private BigDecimal targetPrice(Share share){
+        BigDecimal perShareIncome = share.getLastNetProfit().divide(share.getFund(), 2, RoundingMode.FLOOR);
+        BigDecimal expectedProfit = share.getTotalInvestmentAmount().multiply(share.getReturnInvestmentAverage().divide(BigDecimal.valueOf(100), 2, RoundingMode.FLOOR));
+        BigDecimal expectedPerShareIncome = expectedProfit.multiply(BigDecimal.valueOf(4)).divide(share.getFund(), 2, RoundingMode.FLOOR);
+        BigDecimal perShareIncomeRatio = expectedPerShareIncome.divide(perShareIncome, 2, RoundingMode.FLOOR);
+        BigDecimal targetFK = perShareIncomeRatio.multiply(share.getPriceIncomeRatio());
+        BigDecimal targetPrice = targetFK.multiply(expectedPerShareIncome);
+        return targetPrice;
     }
 
     public BlockingQueue<Long> getTraderQueue(Share share) throws InterruptedException {
@@ -170,7 +180,7 @@ public class TraderService {
     private void setBuyer(Trader trader, Share share, ShareOrder shareOrder) {
         trader.setTraderBehavior(TraderBehavior.BUYER.name());
         trader.setPrinceRangeSmall(share.getPriceStep().getPrice());
-        trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(share.getPriceStep().getPrice(), BigDecimal.valueOf(2).divide(share.getMarketBookRatio(),2, RoundingMode.FLOOR).multiply(share.getPrice())));
+        trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(share.getPriceStep().getPrice(), BigDecimal.valueOf(3).divide(share.getMarketBookRatio(),2, RoundingMode.FLOOR).multiply(share.getPrice())));
         shareOrder.setPrice(this.selectPrice());
     }
 
