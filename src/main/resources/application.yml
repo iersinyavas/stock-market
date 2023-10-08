@@ -76,8 +76,8 @@ spring:
 scheduler:
   cron:
     share:
-      enabled: true
-      expression: 0 0/2 * * * ?
+      enabled: false
+      expression: 0 0/1 * * * ?
 
 share:
   shareId:

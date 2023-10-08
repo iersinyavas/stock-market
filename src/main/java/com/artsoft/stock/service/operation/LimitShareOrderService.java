@@ -1,12 +1,12 @@
-package com.artsoft.stock.service;
+package com.artsoft.stock.service.operation;
 
 import com.artsoft.stock.constant.GeneralEnumeration;
 import com.artsoft.stock.entity.ShareOrder;
 import com.artsoft.stock.entity.SwapProcess;
 import com.artsoft.stock.repository.ShareOrderRepository;
 import com.artsoft.stock.repository.TraderRepository;
+import com.artsoft.stock.service.CandleStickService;
 import com.artsoft.stock.util.ShareOrderUtil;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.BlockingQueue;

@@ -28,6 +28,7 @@ public class StockMarketCloseJobConfiguration extends BaseBatchConfiguration {
     private final DeleteTraderStep deleteTraderStep;
     private final AddMoneyBalanceStep addMoneyBalanceStep;
     private final DailyAccountingStep dailyAccountingStep;
+    private final UpdateTraderStateStep updateTraderStateStep;
 
     @Override
     @Bean(name= StockMarketConstant.STOCK_MARKET_CLOSE)
@@ -39,6 +40,7 @@ public class StockMarketCloseJobConfiguration extends BaseBatchConfiguration {
         stepList.add(updateSharePriceStep.jobStep());
        // stepList.add(deleteTraderStep.jobStep());
         stepList.add(addMoneyBalanceStep.jobStep());
+        //stepList.add(updateTraderStateStep.jobStep());
         stepList.add(dailyAccountingStep.jobStep());
 
 

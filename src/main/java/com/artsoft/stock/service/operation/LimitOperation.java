@@ -1,4 +1,4 @@
-package com.artsoft.stock.service;
+package com.artsoft.stock.service.operation;
 
 import com.artsoft.stock.entity.ShareOrder;
 

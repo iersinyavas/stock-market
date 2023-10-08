@@ -1,9 +1,7 @@
 package com.artsoft.stock.batch.tasklet;
 
-import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.service.share.ShareService;
 import com.artsoft.stock.util.BatchUtil;
-import com.artsoft.stock.util.PriceStepContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.StepContribution;
@@ -15,17 +13,15 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DailyAccountingTasklet implements Tasklet {
+public class UpdateTraderStateTasklet implements Tasklet {
 
     private final ShareService shareService;
     private final BatchUtil batchUtil;
 
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws InterruptedException {
-        Share share = batchUtil.getShare();
-        shareService.dailyAccounting(share);
-        PriceStepContext.priceStepList.clear();
-        log.info("Oturum sonlandı...");
+
+
         return RepeatStatus.FINISHED;
     }
 

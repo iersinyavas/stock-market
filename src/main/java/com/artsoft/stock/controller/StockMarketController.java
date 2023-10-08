@@ -2,7 +2,7 @@ package com.artsoft.stock.controller;
 
 import com.artsoft.stock.request.StockMarketRequest;
 import com.artsoft.stock.response.BaseResponse;
-import com.artsoft.stock.service.ShareService;
+import com.artsoft.stock.service.share.ShareService;
 import com.artsoft.stock.service.broker.StockMarketService;
 import com.artsoft.stock.util.BatchJobLauncher;
 import com.artsoft.stock.util.BatchUtil;

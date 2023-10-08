@@ -1,9 +1,8 @@
 package com.artsoft.stock.controller;
 
-import com.artsoft.stock.service.ShareOrderService;
+import com.artsoft.stock.service.operation.ShareOrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 

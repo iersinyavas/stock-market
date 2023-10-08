@@ -1,4 +1,4 @@
-package com.artsoft.stock.service;
+package com.artsoft.stock.service.operation;
 
 import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.entity.ShareOrder;
@@ -9,6 +9,8 @@ import com.artsoft.stock.repository.ShareOrderRepository;
 import com.artsoft.stock.repository.TraderRepository;
 import com.artsoft.stock.request.ShareOrderRequest;
 import com.artsoft.stock.constant.GeneralEnumeration.*;
+import com.artsoft.stock.service.BaseService;
+import com.artsoft.stock.service.TraderService;
 import com.artsoft.stock.service.broker.StockMarketService;
 import com.artsoft.stock.util.RandomData;
 import com.artsoft.stock.util.TraderBehavior;
@@ -26,7 +28,7 @@ import java.util.Random;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ShareOrderService extends BaseService{
+public class ShareOrderService extends BaseService {
 
     private final TraderRepository traderRepository;
     private final ShareOrderRepository shareOrderRepository;

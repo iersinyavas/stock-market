@@ -1,4 +1,4 @@
-package com.artsoft.stock.service;
+package com.artsoft.stock.service.operation;
 
 import com.artsoft.stock.constant.GeneralEnumeration;
 import com.artsoft.stock.dto.SwapProcessDTO;
@@ -10,6 +10,7 @@ import com.artsoft.stock.exception.InsufficientBalanceException;
 import com.artsoft.stock.mapper.SwapProcessMapper;
 import com.artsoft.stock.repository.ShareOrderRepository;
 import com.artsoft.stock.repository.TraderRepository;
+import com.artsoft.stock.service.CandleStickService;
 import com.artsoft.stock.util.ShareOrderUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,20 +33,6 @@ public class OperationService {
     protected void deleteShareOrder(BlockingQueue<ShareOrder> shareOrderQueue, ShareOrder shareOrder) throws InterruptedException {
         shareOrderQueue.take();
         shareOrderRepository.delete(shareOrder);
-    }
-
-    protected void balanceControl(ShareOrder buy, ShareOrder sell) throws InsufficientBalanceException {//Kuyruktan geldiği için buy ===> shareOrder oldu
-        Trader trader = traderRepository.findById(buy.getTrader().getTraderId()).get();
-        if (trader.getBalance().compareTo(BigDecimal.ZERO) == 0){
-            throw new InsufficientBalanceException();
-        }
-        buy.setVolume(buy.getPrice().multiply(sell.getLot()));
-        BigDecimal divide = BigDecimal.valueOf(trader.getBalance().divide(sell.getPrice(), RoundingMode.FLOOR).longValue());
-        divide = divide.compareTo(buy.getLot()) > 0 ? buy.getLot() : divide;
-        if (divide.compareTo(sell.getLot()) <= 0){
-            buy.setLot(divide);
-            buy.setVolume(buy.getPrice().multiply(buy.getLot()));
-        }
     }
 
     protected void ifSellEqualsBuy(BlockingQueue<ShareOrder> limitSellShareOrderQueue, BlockingQueue<ShareOrder> limitBuyShareOrderQueue, ShareOrder sell, ShareOrder buy, SwapProcess swapProcess) throws InterruptedException {

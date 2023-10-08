@@ -1,7 +1,7 @@
 package com.artsoft.stock.batch.tasklet;
 
 import com.artsoft.stock.entity.Share;
-import com.artsoft.stock.service.Payable;
+import com.artsoft.stock.service.share.Payable;
 import com.artsoft.stock.util.BatchUtil;
 import com.artsoft.stock.util.Factory;
 import lombok.RequiredArgsConstructor;

@@ -1,4 +1,4 @@
-package com.artsoft.stock.service;
+package com.artsoft.stock.service.share;
 
 import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.repository.ShareRepository;

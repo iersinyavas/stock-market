@@ -34,7 +34,7 @@ public class CandleStickService {
     ObjectMapper objectMapper = new ObjectMapper();
     MappingJackson2MessageConverter mappingJackson2MessageConverter = new MappingJackson2MessageConverter();
 
-    protected void saveAndSendSwapProcess(SwapProcess swapProcess, SwapProcessDTO swapProcessDTO, Share share) {
+    public void saveAndSendSwapProcess(SwapProcess swapProcess, SwapProcessDTO swapProcessDTO, Share share) {
         template.setMessageConverter(mappingJackson2MessageConverter);
         CandleStick candleStick;
         if (Objects.isNull(share)){

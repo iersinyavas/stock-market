@@ -1,13 +1,10 @@
 package com.artsoft.stock.entity;
 
-import com.artsoft.stock.service.LimitShareOrderService;
 import lombok.Data;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
-import java.util.Random;
 
 @Data
 @Entity

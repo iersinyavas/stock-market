@@ -2,7 +2,6 @@ package com.artsoft.stock.batch.tasklet;
 
 import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.entity.Trader;
-import com.artsoft.stock.service.ShareService;
 import com.artsoft.stock.service.TraderService;
 import com.artsoft.stock.util.BatchUtil;
 import lombok.RequiredArgsConstructor;
@@ -13,8 +12,6 @@ import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 
 @Slf4j

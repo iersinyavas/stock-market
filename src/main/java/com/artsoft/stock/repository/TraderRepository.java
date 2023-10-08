@@ -14,6 +14,9 @@ public interface TraderRepository extends JpaRepository<Trader, Long> {
     @Query(value = "select t.traderId from Trader t where t.traderId <> :traderId")
     List<Long> getTraderListForOpenSession(Long traderId);
 
+    @Query(value = "select t.traderId from Trader t where t.traderId <> :traderId and t.balance > :price")
+    List<Long> getTraderListForShareOrder(Long traderId, BigDecimal price);
+
     @Query(value = "select t from Trader t where t.traderId <> :traderId")
     List<Trader> getTraderList(Long traderId);
 

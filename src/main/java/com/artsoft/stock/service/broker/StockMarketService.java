@@ -1,10 +1,10 @@
 package com.artsoft.stock.service.broker;
 
 import com.artsoft.stock.request.StockMarketRequest;
-import com.artsoft.stock.service.LimitOperation;
-import com.artsoft.stock.service.MarketOperation;
-import com.artsoft.stock.service.OperationService;
-import com.artsoft.stock.service.ShareService;
+import com.artsoft.stock.service.operation.LimitOperation;
+import com.artsoft.stock.service.operation.MarketOperation;
+import com.artsoft.stock.service.operation.OperationService;
+import com.artsoft.stock.service.share.ShareService;
 import com.artsoft.stock.util.BatchJobLauncher;
 import com.artsoft.stock.util.BatchUtil;
 import com.artsoft.stock.util.Factory;

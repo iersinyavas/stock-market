@@ -2,16 +2,10 @@ package com.artsoft.stock.listener;
 
 import com.artsoft.stock.context.ContextUtil;
 import com.artsoft.stock.context.StockMarketBatchContext;
-import com.artsoft.stock.entity.Share;
-import com.artsoft.stock.service.ShareService;
-import com.artsoft.stock.util.BatchUtil;
 import lombok.NonNull;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 public class StockMarketJobListener implements JobExecutionListener {
 

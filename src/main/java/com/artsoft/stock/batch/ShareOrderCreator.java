@@ -1,14 +1,12 @@
 package com.artsoft.stock.batch;
 
 import com.artsoft.stock.entity.Share;
-import com.artsoft.stock.entity.Trader;
-import com.artsoft.stock.service.ShareOrderService;
+import com.artsoft.stock.service.operation.ShareOrderService;
 import com.artsoft.stock.service.TraderService;
 import com.artsoft.stock.util.BatchUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Random;
 
@@ -37,7 +35,7 @@ public class ShareOrderCreator extends Thread {
                 }
                 Thread.sleep(new Random().nextInt(500));
                 synchronized (lock) {
-                    List<Long> traderIdList = traderService.getAllTraderIdList();
+                    List<Long> traderIdList = traderService.getTraderIdListForShareOrder(share.getPriceStep().getPrice());
                     Long traderId = traderIdList.get(random.nextInt(traderIdList.size()));
                     shareOrderService.createShareOrder(share, traderId);
 

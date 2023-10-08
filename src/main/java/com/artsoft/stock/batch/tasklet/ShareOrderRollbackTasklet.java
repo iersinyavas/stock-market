@@ -3,7 +3,7 @@ package com.artsoft.stock.batch.tasklet;
 import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.entity.ShareOrder;
 import com.artsoft.stock.entity.Trader;
-import com.artsoft.stock.service.ShareOrderService;
+import com.artsoft.stock.service.operation.ShareOrderService;
 import com.artsoft.stock.service.TraderService;
 import com.artsoft.stock.util.BatchUtil;
 import com.artsoft.stock.constant.GeneralEnumeration.*;

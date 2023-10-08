@@ -2,7 +2,7 @@ package com.artsoft.stock.util;
 
 import com.artsoft.stock.StockApplication;
 import com.artsoft.stock.request.StockMarketRequest;
-import com.artsoft.stock.service.ShareService;
+import com.artsoft.stock.service.share.ShareService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;

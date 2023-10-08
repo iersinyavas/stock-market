@@ -145,6 +145,10 @@ public class TraderService {
         return traderRepository.getTraderListForOpenSession(batchUtil.getTraderId());
     }
 
+    public List<Long> getTraderIdListForShareOrder(BigDecimal price){
+        return traderRepository.getTraderListForShareOrder(batchUtil.getTraderId(), price);
+    }
+
     public Trader getTrader(Long traderId){
         return traderRepository.findById(traderId).get();
     }

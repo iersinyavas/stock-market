@@ -5,7 +5,7 @@ import com.artsoft.stock.exception.InsufficientBalanceException;
 import com.artsoft.stock.exception.InsufficientLotException;
 import com.artsoft.stock.request.ShareOrderRequest;
 import com.artsoft.stock.response.BaseResponse;
-import com.artsoft.stock.service.ShareOrderService;
+import com.artsoft.stock.service.operation.ShareOrderService;
 import com.artsoft.stock.service.broker.StockMarketService;
 import com.artsoft.stock.util.BatchUtil;
 import lombok.RequiredArgsConstructor;

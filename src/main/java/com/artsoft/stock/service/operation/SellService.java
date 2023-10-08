@@ -1,4 +1,4 @@
-package com.artsoft.stock.service;
+package com.artsoft.stock.service.operation;
 
 import com.artsoft.stock.constant.GeneralEnumeration;
 import com.artsoft.stock.entity.Share;
@@ -7,8 +7,8 @@ import com.artsoft.stock.entity.SwapProcess;
 import com.artsoft.stock.entity.Trader;
 import com.artsoft.stock.repository.ShareOrderRepository;
 import com.artsoft.stock.repository.TraderRepository;
+import com.artsoft.stock.service.CandleStickService;
 import com.artsoft.stock.util.ShareOrderUtil;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -37,7 +37,7 @@ public class SellService extends OperationService implements MarketOperation {
                 Trader trader = traderRepository.findById(shareOrder.getTrader().getTraderId()).get();
                 trader.setHaveLot(trader.getHaveLot().add(shareOrder.getLot()));
                 traderRepository.save(trader);
-                this.deleteShareOrder(shareOrderQueue, shareOrder);
+                //this.deleteShareOrder(shareOrderQueue, shareOrder);
                 return true;
             }
             SwapProcess swapProcess = new SwapProcess();
