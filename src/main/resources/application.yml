@@ -73,11 +73,16 @@ spring:
       enabled: false
     initialize-schema: ALWAYS
 
+  task:
+    scheduling:
+      pool:
+        size: 10
+
 scheduler:
   cron:
     share:
-      enabled: false
-      expression: 0 0/1 * * * ?
+      enabled: true
+      expression: 0 0/2 * * * ?
 
 share:
   shareId:

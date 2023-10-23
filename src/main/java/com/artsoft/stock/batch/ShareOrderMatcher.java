@@ -17,7 +17,6 @@ public class ShareOrderMatcher extends Thread {
 
     public static boolean firstWork = true;
     public Object lock = new Object();
-    private Random random = new Random();
 
     @Override
     public void run() {

@@ -13,6 +13,7 @@ import com.artsoft.stock.util.TraderBehavior;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -33,6 +34,8 @@ public class TraderService {
     private final ShareRepository shareRepository;
     private final BatchUtil batchUtil;
 
+    @Value("${share.remaining-balance-day}")
+    private Integer remainingBalanceDay;
     Random random = new Random();
 
     public Trader createTrader(Share share, BigDecimal perPersonShareQuantity){
@@ -87,6 +90,15 @@ public class TraderService {
         BigDecimal perShareIncomeRatio = expectedPerShareIncome.divide(perShareIncome, 2, RoundingMode.FLOOR);
         BigDecimal targetFK = perShareIncomeRatio.multiply(share.getPriceIncomeRatio());
         BigDecimal targetPrice = targetFK.multiply(expectedPerShareIncome);
+        return targetPrice;
+    }
+
+    public BigDecimal updateTargetPrice(Share share){
+        Integer remainingBalanceDayForRatio = (remainingBalanceDay - share.getRemainingBalanceDay()) == 0 ? 1 : (remainingBalanceDay - share.getRemainingBalanceDay());
+        BigDecimal ratio = BigDecimal.valueOf(remainingBalanceDay).divide(BigDecimal.valueOf(remainingBalanceDayForRatio), 2, RoundingMode.FLOOR);
+        BigDecimal profit = share.getProfit().multiply(ratio);
+        BigDecimal expected = share.getFund().add(profit);
+        BigDecimal targetPrice = expected.multiply(share.getMarketBookRatio()).divide(share.getCurrentLot(), 2, RoundingMode.FLOOR);
         return targetPrice;
     }
 
@@ -153,6 +165,14 @@ public class TraderService {
         return traderRepository.findById(traderId).get();
     }
 
+    public List<Trader> findAll(){
+        return traderRepository.findAll();
+    }
+
+    public void saveAll(List<Trader> traderList){
+        traderRepository.saveAll(traderList);
+    }
+
     public Trader save(Trader trader){
         return traderRepository.save(trader);
     }
@@ -182,16 +202,18 @@ public class TraderService {
     }
 
     private void setBuyer(Trader trader, Share share, ShareOrder shareOrder) {
+        BigDecimal targetPrice = this.updateTargetPrice(share);
         trader.setTraderBehavior(TraderBehavior.BUYER.name());
-        trader.setPrinceRangeSmall(share.getPriceStep().getPrice());
-        trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(share.getPriceStep().getPrice(), BigDecimal.valueOf(3).divide(share.getMarketBookRatio(),2, RoundingMode.FLOOR).multiply(share.getPrice())));
+        trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(targetPrice.divide(BigDecimal.valueOf(2), 2, RoundingMode.FLOOR), targetPrice));
+        trader.setPrinceRangeSmall(RandomData.randomShareOrderPrice(BigDecimal.ZERO, targetPrice.divide(BigDecimal.valueOf(2), 2, RoundingMode.FLOOR)));
         shareOrder.setPrice(this.selectPrice());
     }
 
     private void setSeller(Trader trader, Share share, ShareOrder shareOrder) {
+        BigDecimal targetPrice = this.updateTargetPrice(share);
         trader.setTraderBehavior(TraderBehavior.SELLER.name());
-        trader.setPrinceRangeSmall(RandomData.randomShareOrderPrice(share.getPriceStep().getPrice().divide(BigDecimal.valueOf(2), RoundingMode.FLOOR), share.getPriceStep().getPrice()));
-        trader.setPrinceRangeBig(share.getPriceStep().getPrice());
+        trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(targetPrice.divide(BigDecimal.valueOf(2), 2, RoundingMode.FLOOR), targetPrice));
+        trader.setPrinceRangeSmall(RandomData.randomShareOrderPrice(BigDecimal.ZERO, targetPrice.divide(BigDecimal.valueOf(2), 2, RoundingMode.FLOOR)));
         shareOrder.setPrice(this.selectPrice());
     }
 

@@ -126,7 +126,6 @@ public class OperationService {
 
     public void sellProcessEnd(ShareOrder sell, Trader traderSell) {
         traderSell.setBalance(traderSell.getBalance().add(sell.getVolume()));
-        //traderSell.setCostAmount(traderSell.getCostAmount().subtract(traderSell.getCost().multiply(sell.getLot())));
         traderRepository.save(traderSell);
     }
 

@@ -40,9 +40,8 @@ public class StockMarketCloseJobConfiguration extends BaseBatchConfiguration {
         stepList.add(updateSharePriceStep.jobStep());
        // stepList.add(deleteTraderStep.jobStep());
         stepList.add(addMoneyBalanceStep.jobStep());
-        //stepList.add(updateTraderStateStep.jobStep());
         stepList.add(dailyAccountingStep.jobStep());
-
+        stepList.add(updateTraderStateStep.jobStep());
 
         //Maaş eklemesi stepinide ekle
         SimpleJobBuilder simpleJobBuilder = super.createSimpleJobBuilder(StockMarketConstant.STOCK_MARKET_CLOSE, stepList);

@@ -87,7 +87,6 @@ public class ShareService {
         share.setMarketValue(share.getPrice().multiply(share.getCurrentLot()));
         share.setMarketBookRatio(share.getMarketValue().divide(share.getOwnResources(), 2, RoundingMode.FLOOR));
 
-
         shareRepository.save(share);
     }
 

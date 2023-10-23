@@ -37,7 +37,7 @@ public class SellService extends OperationService implements MarketOperation {
                 Trader trader = traderRepository.findById(shareOrder.getTrader().getTraderId()).get();
                 trader.setHaveLot(trader.getHaveLot().add(shareOrder.getLot()));
                 traderRepository.save(trader);
-                //this.deleteShareOrder(shareOrderQueue, shareOrder);
+                this.deleteShareOrder(shareOrderQueue, shareOrder);
                 return true;
             }
             SwapProcess swapProcess = new SwapProcess();

@@ -21,7 +21,7 @@ public class ShareScheduler {
     @Scheduled(cron = "${scheduler.cron.share.expression}")
     public void start() throws InterruptedException, JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {
         stockMarketService.launchStockMarketStart();
-        Thread.sleep(30000);
+        Thread.sleep(90000);
         stockMarketService.launchStockMarketStop();
     }
 }

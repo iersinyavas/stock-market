@@ -57,13 +57,6 @@ public class StockMarketService {
         BlockingQueue<ShareOrder> limitBuyShareOrderQueue = share.getPriceStep().getLimitBuyShareOrderQueue();
 
         BlockingQueue<ShareOrder> shareOrderQueue = this.shareOrderQueueIsEmpty(PriceStep.marketShareOrderQueue);
-        //BlockingQueue<ShareOrder> shareOrderQueue = this.shareOrderQueueIsEmpty(PriceStep.marketSellShareOrderQueue);
-
-        //TODO Market emirlerine buy ve sell diye ayırarak işlem yapılacak gerekli düzenlemeyi yap
-        // Zaten buy için max fiyatta sell kuyruğu devreye girecek
-        // sell için min fiyatta buy kuyruğu devreye girer yarım kalan market orderlarda
-
-
         if (Objects.nonNull(shareOrderQueue)){
             ShareOrder shareOrder = shareOrderQueue.peek();
             MarketOperation marketOperation = factory.getOperationService(shareOrder.getShareOrderStatus());
