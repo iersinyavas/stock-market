@@ -6,6 +6,7 @@ import javax.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -38,5 +39,5 @@ public class ShareOrder implements Serializable {
     private String shareOrderType;
 
     @Column(name = "create_time")
-    private Timestamp createTime;
+    private LocalDateTime createTime;
 }

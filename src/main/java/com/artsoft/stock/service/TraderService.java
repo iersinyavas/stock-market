@@ -1,11 +1,13 @@
 package com.artsoft.stock.service;
 
+import com.artsoft.stock.constant.GeneralEnumeration.*;
 import com.artsoft.stock.entity.Share;
 import com.artsoft.stock.entity.ShareOrder;
 import com.artsoft.stock.entity.Trader;
 import com.artsoft.stock.repository.ShareRepository;
 import com.artsoft.stock.repository.TraderRepository;
 import com.artsoft.stock.request.TraderRequest;
+import com.artsoft.stock.service.operation.ShareOrderService;
 import com.artsoft.stock.util.BatchUtil;
 import com.artsoft.stock.util.PriceStepContext;
 import com.artsoft.stock.util.RandomData;
@@ -15,9 +17,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -32,6 +37,7 @@ public class TraderService {
 
     private final TraderRepository traderRepository;
     private final ShareRepository shareRepository;
+    private final ShareOrderService shareOrderService;
     private final BatchUtil batchUtil;
 
     @Value("${share.remaining-balance-day}")
@@ -54,8 +60,8 @@ public class TraderService {
         trader.setCurrentHaveLot(trader.getHaveLot());
         trader.setReturnInvestmentRatio(BigDecimal.valueOf(random.nextInt(100)+1));
         trader.setTraderBehavior(TraderBehavior.BUYER.name()/*RandomData.traderBehavior().name()*/);
-        trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(share.getPrice(), this.targetPrice(share)));
-        trader.setPrinceRangeSmall(RandomData.randomShareOrderPrice(share.getPrice().divide(BigDecimal.valueOf(2), RoundingMode.FLOOR), share.getPrice()));
+        trader.setPriceBuy(RandomData.randomShareOrderPrice(share.getPrice(), this.targetPrice(share)));
+        trader.setPriceSell(RandomData.randomShareOrderPrice(share.getPrice().divide(BigDecimal.valueOf(2), RoundingMode.FLOOR), share.getPrice()));
 
         share.setLot(share.getLot().subtract(trader.getHaveLot()));
         log.info("Trader adı : {}", trader.getName());
@@ -76,8 +82,8 @@ public class TraderService {
         trader.setCurrentHaveLot(BigDecimal.ZERO);
         trader.setReturnInvestmentRatio(BigDecimal.valueOf(random.nextInt(100)+1));
         trader.setTraderBehavior(TraderBehavior.BUYER.name());
-        trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(BigDecimal.ZERO,  this.targetPrice(share)));
-        trader.setPrinceRangeSmall(RandomData.randomShareOrderPrice(BigDecimal.ZERO, share.getPrice()));
+        trader.setPriceBuy(RandomData.randomShareOrderPrice(BigDecimal.ZERO,  this.targetPrice(share)));
+        trader.setPriceSell(RandomData.randomShareOrderPrice(BigDecimal.ZERO, share.getPrice()));
 
         log.info("Trader adı : {}", trader.getName());
         return trader;
@@ -186,38 +192,26 @@ public class TraderService {
         traderRepository.delete(trader);
     }
 
-    public void setTraderBehavior(Trader trader, Share share, ShareOrder shareOrder){
-        if (share.getPriceStep().getPrice().compareTo(trader.getPrinceRangeBig()) < 0 &&
-                share.getPriceStep().getPrice().compareTo(trader.getPrinceRangeSmall()) > 0){
-            if (trader.getCurrentHaveLot().compareTo(BigDecimal.ZERO) == 0 && trader.getBalance().compareTo(share.getPriceStep().getPrice()) >= 0){
-                this.setBuyer(trader, share, shareOrder);
-            }
-            return;
-        }else if (share.getPriceStep().getPrice().compareTo(trader.getPrinceRangeBig()) >= 0 && trader.getCurrentHaveLot().compareTo(BigDecimal.ZERO) > 0){
-            this.setSeller(trader, share, shareOrder);
-        }else {
-            this.setBuyer(trader, share, shareOrder);
-        }
-        traderRepository.save(trader);
-    }
-
-    private void setBuyer(Trader trader, Share share, ShareOrder shareOrder) {
-        BigDecimal targetPrice = this.updateTargetPrice(share);
-        trader.setTraderBehavior(TraderBehavior.BUYER.name());
-        trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(targetPrice.divide(BigDecimal.valueOf(2), 2, RoundingMode.FLOOR), targetPrice));
-        trader.setPrinceRangeSmall(RandomData.randomShareOrderPrice(BigDecimal.ZERO, targetPrice.divide(BigDecimal.valueOf(2), 2, RoundingMode.FLOOR)));
-        shareOrder.setPrice(this.selectPrice());
-    }
-
-    private void setSeller(Trader trader, Share share, ShareOrder shareOrder) {
-        BigDecimal targetPrice = this.updateTargetPrice(share);
-        trader.setTraderBehavior(TraderBehavior.SELLER.name());
-        trader.setPrinceRangeBig(RandomData.randomShareOrderPrice(targetPrice.divide(BigDecimal.valueOf(2), 2, RoundingMode.FLOOR), targetPrice));
-        trader.setPrinceRangeSmall(RandomData.randomShareOrderPrice(BigDecimal.ZERO, targetPrice.divide(BigDecimal.valueOf(2), 2, RoundingMode.FLOOR)));
-        shareOrder.setPrice(this.selectPrice());
-    }
-
     public BigDecimal selectPrice(){
         return PriceStepContext.priceStepList.get(random.nextInt(PriceStepContext.priceStepList.size()));
+    }
+
+    public void sendShareOrder(ShareOrder shareOrder){
+        shareOrderService.sendShareOrder(shareOrder);
+    }
+
+    @Transactional
+    public void createShareOrder(Share share, Long traderId) throws InterruptedException {
+        Trader trader = traderRepository.findById(traderId).get();
+
+        ShareOrder shareOrder = new ShareOrder();
+        shareOrder.setTrader(trader);
+        shareOrder.setCreateTime(LocalDateTime.now());
+        shareOrder.setShareOrderStatus(trader.getTraderBehavior());
+        shareOrder.setShareOrderType(RandomData.shareOrderType().name());
+        if (shareOrder.getShareOrderType().equals(ShareOrderType.LIMIT.name())){
+            shareOrder.setPrice(shareOrder.getShareOrderStatus().equals(ShareOrderStatus.BUY.name()) ? trader.getPriceBuy() : trader.getPriceSell());
+        }
+        shareOrder.set
     }
 }

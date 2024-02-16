@@ -27,14 +27,6 @@ public class GeneralEnumeration {
         OPENING, NORMAL, CLOSING
     }
 
-    public enum InvestmentResult{
-        PROFIT, LOSS
-    }
-
-    public enum DirectionFlag{
-        UP, DOWN
-    }
-
     public enum ShareOrderType {
         MARKET, LIMIT
     }

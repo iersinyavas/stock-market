@@ -46,10 +46,6 @@ public class RandomData {
         return ShareCode.values()[random.nextInt(ShareCode.values().length)];
     }
 
-    public static int directionFlag(){
-        return random.nextInt(DirectionFlag.values().length);
-    }
-
     public static int random(int bound){
         return random.nextInt(bound);
     }

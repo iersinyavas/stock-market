@@ -43,7 +43,6 @@ public class ShareOrderService extends BaseService {
         shareOrder.setTrader(trader);
         shareOrder.setCreateTime(Timestamp.valueOf(LocalDateTime.now()));
         shareOrder.setPrice(traderService.selectPrice());
-        traderService.setTraderBehavior(trader, share, shareOrder);
         //Açılış seansı olduğu için
         shareOrder.setShareOrderType(ShareOrderType.LIMIT.name());
         if (trader.getTraderBehavior().equals(TraderBehavior.BUYER.name())){
@@ -66,7 +65,6 @@ public class ShareOrderService extends BaseService {
             this.processSell(trader, shareOrder);
         }
 
-        this.saveProcessEntity(share, trader, shareOrder);
     }
 
     @Transactional
@@ -75,48 +73,11 @@ public class ShareOrderService extends BaseService {
 
         ShareOrder shareOrder = new ShareOrder();
         shareOrder.setTrader(trader);
-        shareOrder.setCreateTime(Timestamp.valueOf(LocalDateTime.now()));
+        shareOrder.setCreateTime(LocalDateTime.now());
         shareOrder.setPrice(traderService.selectPrice());
-        traderService.setTraderBehavior(trader, share, shareOrder);
         shareOrder.setShareOrderType(RandomData.shareOrderType().name());
 
-        CONTROL:{
-            if (trader.getTraderBehavior().equals(TraderBehavior.BUYER.name())){
-                if (trader.getBalance().compareTo(share.getPriceStep().getPrice()) < 0){
-                    log.info("Yetersiz bakiye...");
-                    return;
-                }
-                if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) <= 0){
-                    shareOrder.setShareOrderType(RandomData.shareOrderType().name());
-                    shareOrder.setShareOrderStatus(ShareOrderStatus.BUY.name());
-                    if (shareOrder.getShareOrderType().equals(ShareOrderType.MARKET.name())){
-                        shareOrder.setPrice(null);
-                        shareOrder.setLot(RandomData.randomLot(trader.getBalance().divide(share.getPrice(), 2, RoundingMode.FLOOR)));
-                        break CONTROL;
-                    }
-                    shareOrder.setPrice(share.getPriceStep().getPrice());
-                }
-                this.processBuy(trader, shareOrder);
-            } else { //SELL
-                if (trader.getHaveLot().compareTo(BigDecimal.ZERO) == 0){
-                    log.info("Yetersiz lot...");
-                    return;
-                }
-                if (share.getPriceStep().getPrice().compareTo(shareOrder.getPrice()) >= 0){
-                    shareOrder.setShareOrderType(RandomData.shareOrderType().name());
-                    shareOrder.setShareOrderStatus(ShareOrderStatus.SELL.name());
-                    if (shareOrder.getShareOrderType().equals(ShareOrderType.MARKET.name())){
-                        shareOrder.setPrice(null);
-                        shareOrder.setLot(RandomData.randomLot(trader.getHaveLot()));
-                        trader.setHaveLot(trader.getHaveLot().subtract(shareOrder.getLot()));
-                        break CONTROL;
-                    }
-                    shareOrder.setPrice(share.getPriceStep().getPrice());
-                }
-                this.processSell(trader, shareOrder);
-            }
-        }
-        this.saveProcessEntity(share, trader, shareOrder);
+
     }
 
     @Transactional
@@ -157,10 +118,9 @@ public class ShareOrderService extends BaseService {
         return shareOrderRepository.save(shareOrder);
     }
 
-    private void saveProcessEntity(Share share, Trader trader, ShareOrder shareOrder) throws InterruptedException {
+    private void sendShareOrder(Trader trader, ShareOrder shareOrder) throws InterruptedException {
         traderRepository.save(trader);
         shareOrderRepository.save(shareOrder);
-        stockMarketService.sendShareOrderToStockMarket(share, shareOrder);
     }
 
     private void processSell(Trader trader, ShareOrder shareOrder) {
@@ -181,5 +141,8 @@ public class ShareOrderService extends BaseService {
         shareOrderRepository.delete(shareOrder);
     }
 
+    public void sendShareOrder(ShareOrder shareOrder){
+        shareOrderRepository.save(shareOrder);
+    }
 
 }
